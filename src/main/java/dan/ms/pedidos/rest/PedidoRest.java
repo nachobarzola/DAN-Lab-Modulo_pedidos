@@ -2,14 +2,17 @@ package dan.ms.pedidos.rest;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.stream.IntStream;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import dan.ms.pedidos.domain.DetallePedido;
@@ -43,6 +46,21 @@ public class PedidoRest {
 		listaPedido.get(index.getAsInt()).setDetalle(detalle);
 		return ResponseEntity.ok(listaPedido.get(index.getAsInt()));
 		
+	}
+	
+	@PutMapping(path= "/{idPedido}")
+	@ApiOperation(value="Actualiza pedido dado un id")
+	public ResponseEntity<Pedido> actualizar(@RequestBody Pedido pedido, @PathVariable Integer idPedido){
+		OptionalInt index = IntStream.range(0, listaPedido.size())
+				.filter(i -> listaPedido.get(i).getId().equals(idPedido))
+				.findFirst();
+		if(index.isPresent()) {
+			listaPedido.set(index.getAsInt(), pedido);
+			return ResponseEntity.ok(pedido);
+		}
+		else {
+			return ResponseEntity.notFound().build();
+		}
 	}
 	
 	
