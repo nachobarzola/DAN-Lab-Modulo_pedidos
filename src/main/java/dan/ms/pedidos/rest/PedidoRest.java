@@ -2,17 +2,16 @@ package dan.ms.pedidos.rest;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.stream.IntStream;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import dan.ms.pedidos.domain.DetallePedido;
@@ -31,7 +30,7 @@ public class PedidoRest {
 	@ApiOperation(value= "Crea un pedido")
 	public ResponseEntity<Pedido> crear(@RequestBody Pedido pedido){
 		pedido.setId(ID_GEN++);
-		System.out.print("Se creo un nuevo pedido: "+ pedido.toString());
+		System.out.print("Se creo un nuevo pedido: "+ pedido.toString()+"\n");
 		listaPedido.add(pedido);
 		return ResponseEntity.ok(pedido);
 	}
@@ -63,6 +62,20 @@ public class PedidoRest {
 		}
 	}
 	
+	@DeleteMapping(path= "/{idPedido}")
+	@ApiOperation(value= "Borra un pedido dado un id")
+	public ResponseEntity<Pedido> borrar(@PathVariable Integer idPedido){
+		OptionalInt index = IntStream.range(0, listaPedido.size())
+				.filter(i -> listaPedido.get(i).getId().equals(idPedido))
+				.findFirst();
+		if(index.isPresent()) {
+			listaPedido.remove(index.getAsInt());
+			return ResponseEntity.ok().build();
+		}
+		else {
+			return ResponseEntity.notFound().build();
+		}
+	}
 	
 	
 	
