@@ -84,15 +84,12 @@ public class PedidoRest {
 	@ApiOperation(value= "Borra el detalle de un pedido dado el id del pedido y el id del detalle")
 	public ResponseEntity<DetallePedido> borrar(@PathVariable Integer idPedido,@PathVariable Integer idDetalle){
 
-		 OptionalInt indexPedido = IntStream.range(0, listaPedido.size()).
-				filter(i -> listaPedido.get(i).getId().equals(idPedido))
-				.findFirst();
+		 OptionalInt indexPedido = getIndexIdPedido(idPedido);
 		//Verificamos si existe ese pedido con esa id.
 		if(indexPedido.isPresent()) {
+			
 			Pedido ped = listaPedido.get(indexPedido.getAsInt());
-			OptionalInt indexDetalle = IntStream.range(0, ped.getDetalle().size())
-					.filter(j -> ped.getDetalle().get(j).getId().equals(idDetalle))
-					.findFirst();
+			OptionalInt indexDetalle = getIndexIdDetallePedido(ped,idDetalle);
 			
 			if(indexDetalle.isPresent()) {
 				DetallePedido detallePedido = listaPedido.get(indexPedido.getAsInt()).getDetalle().get(indexDetalle.getAsInt());
@@ -128,6 +125,45 @@ public class PedidoRest {
 		return ResponseEntity.of(pedido);
 	}
 	
+	@GetMapping(path= "/{idPedido}/detalle/{idDetalle}")
+	@ApiOperation(value= "Obtener pedido dado una id y un detalleId")
+	public ResponseEntity<DetallePedido> getPorIdDetalle(@PathVariable Integer idPedido, @PathVariable Integer idDetalle){
+		 OptionalInt indexPedido = getIndexIdPedido(idPedido);
+			//Verificamos si existe ese pedido con esa id.
+			if(indexPedido.isPresent()) {
+				
+				Pedido ped = listaPedido.get(indexPedido.getAsInt());
+				OptionalInt indexDetalle = getIndexIdDetallePedido(ped,idDetalle);
+				
+				//Verificamos si existe el detalle con idDetalle.
+				if(indexDetalle.isPresent()) {
+					DetallePedido detallePedido = listaPedido.get(indexPedido.getAsInt()).getDetalle().get(indexDetalle.getAsInt());
+					return ResponseEntity.ok(detallePedido);
+				}
+				else {
+					return ResponseEntity.notFound().build();
+				}
+			
+			}
+			else {
+				return ResponseEntity.notFound().build();
+			}
+	
+	
+	
+	}
+	
+	//METODOS AUXILIARES
+	private OptionalInt getIndexIdPedido(Integer idPedido) {
+		return IntStream.range(0, listaPedido.size()).
+				filter(i -> listaPedido.get(i).getId().equals(idPedido))
+				.findFirst();
+	}
+	private OptionalInt getIndexIdDetallePedido(Pedido pedido,Integer idDetalle) {
+		return IntStream.range(0, pedido.getDetalle().size())
+				.filter(j -> pedido.getDetalle().get(j).getId().equals(idDetalle))
+				.findFirst();
+	}
 	
 
 	
