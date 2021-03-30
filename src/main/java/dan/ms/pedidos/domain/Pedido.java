@@ -10,6 +10,8 @@ public class Pedido {
 	private List<DetallePedido> detalle =new ArrayList<>();
 	private EstadoPedido estado;
 	private Obra obra;
+	
+	
 	public Pedido(Integer id, Instant fechaPedido, List<DetallePedido> detalle, EstadoPedido estado, Obra obra) {
 		super();
 		this.id = id;

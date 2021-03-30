@@ -76,7 +76,36 @@ public class PedidoRest {
 			return ResponseEntity.notFound().build();
 		}
 	}
-	
+	//TODO: REFACTORIZAR CODIGO: ver si se puede hacer mas simple!
+	@DeleteMapping(path= "/{idPedido}/detalle/{idDetalle}")
+	@ApiOperation(value= "Borra el detalle de un pedido dado el id del pedido y el id del detalle")
+	public ResponseEntity<DetallePedido> borrar(@PathVariable Integer idPedido,@PathVariable Integer idDetalle){
+
+		 OptionalInt indexPedido = IntStream.range(0, listaPedido.size()).
+				filter(i -> listaPedido.get(i).getId().equals(idPedido))
+				.findFirst();
+		//Verificamos si existe ese pedido con esa id.
+		if(indexPedido.isPresent()) {
+			Pedido ped = listaPedido.get(indexPedido.getAsInt());
+			OptionalInt indexDetalle = IntStream.range(0, ped.getDetalle().size())
+					.filter(j -> ped.getDetalle().get(j).getId().equals(idDetalle))
+					.findFirst();
+			
+			if(indexDetalle.isPresent()) {
+				DetallePedido detallePedido = listaPedido.get(indexPedido.getAsInt()).getDetalle().get(indexDetalle.getAsInt());
+				listaPedido.get(indexPedido.getAsInt()).getDetalle().remove(indexDetalle.getAsInt());
+				return ResponseEntity.ok(detallePedido);
+			}
+			else {
+				return ResponseEntity.notFound().build();
+			}
+		
+		}
+		else {
+			return ResponseEntity.notFound().build();
+		}
+		
+	}
 	
 	
 	
