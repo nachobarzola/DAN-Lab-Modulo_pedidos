@@ -1,11 +1,15 @@
 package dan.ms.pedidos.rest;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,8 +20,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
 import dan.ms.pedidos.domain.DetallePedido;
+import dan.ms.pedidos.domain.Obra;
 import dan.ms.pedidos.domain.Pedido;
 import io.swagger.annotations.ApiOperation;
 
@@ -28,6 +34,8 @@ import io.swagger.annotations.ApiOperation;
 public class PedidoRest {
 	private static final List<Pedido> listaPedido=new ArrayList<>();
 	private static Integer ID_GEN = 1;
+	private static String API_REST_USUARIO = "http://localhost:50000/api";
+	private static String ENDPOINT_OBRA = "/obra";
 	
 	@PostMapping
 	@ApiOperation(value= "Crea un pedido")
@@ -124,6 +132,49 @@ public class PedidoRest {
 				.findFirst();
 		return ResponseEntity.of(pedido);
 	}
+	
+	@GetMapping
+	@ApiOperation(value="Obtiene los pedidos asociados al id y/o cuit de un cliente")
+	public ResponseEntity<List<Pedido>> getPor_Cuit_o_Id(@RequestParam(required=false) Integer cuit, @RequestParam(required=false) Integer idCliente){
+		RestTemplate restUsuario = new RestTemplate();
+		String uri="";
+		
+		if(cuit==null && idCliente==null) {
+			return ResponseEntity.badRequest().build();
+		}
+		else if(cuit!=null && idCliente ==null) {
+			//TODO: NO HAY METODO EN EL API DE USUARIO para obtener obra por cuit.
+			//uri = API_REST_USUARIO + ENDPOINT_OBRA + "?cuit="+;
+		}
+		else if(cuit==null && idCliente != null) {
+			uri = API_REST_USUARIO + ENDPOINT_OBRA + "?id_cliente="+idCliente;
+		}
+		//(cuit!=null && idCliente != null)
+		else {
+			
+		}
+		ResponseEntity<Obra[]> respuesta = restUsuario.exchange(uri, HttpMethod.GET,null,Obra[].class );
+		Obra[] obrasRespuesta = respuesta.getBody();
+		//Una vez que obtengo las obras, debo buscar los pedidos asosiados a las obras
+		List<Obra> obrasRespuestaLista = Arrays.asList(obrasRespuesta);
+		
+		//Buscamos los pedidos asoaciados a las obras recibidas del API usuario
+		List<Pedido> resultado = listaPedido.stream()
+				.filter(unPed -> obrasRespuestaLista.contains(unPed.getObra()))
+				.collect(Collectors.toList());
+		
+		System.out.print("Cantidad de pedidos que coinciden con las obras del cliente:("+resultado.size() +") \n");
+		
+		
+		return ResponseEntity.ok(resultado);
+		
+		
+		
+		
+		
+	}
+	
+	
 	
 	@GetMapping(path= "/{idPedido}/detalle/{idDetalle}")
 	@ApiOperation(value= "Obtener pedido dado una id y un detalleId")
