@@ -150,17 +150,6 @@ public class PedidoRest {
     	}else { 
     		RestTemplate obra = new RestTemplate();
     		String url="";
-  
-    		//Si me pasa el idCliente entonces le pido al api obra esta consulta
-    		//http://127.0.0.1:8081/api/obra?cliente=idCliente;
-    		//Una vez que obtengo la obra armo una lista con todos los id de las obra de ese usuario.
-    		//para cada id de obra obtengo todos los pedidos correspondientes.
-    		
-    		
-    		//Si me pasa el cuit, le pido al api cliente que me de el id del cliente y hacemos lo de arriba
-    		//http://127.0.0.1:8081/api/cliente/cuit/cuit
-    		
-    	
     	if(cuit!=null) {
     		       
     		   url = SERVER + PUERTO+ REST_API_OBRA + "/cuit/" + cuit;
