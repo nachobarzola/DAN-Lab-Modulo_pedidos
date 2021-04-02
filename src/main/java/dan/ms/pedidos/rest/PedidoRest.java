@@ -34,7 +34,7 @@ import io.swagger.annotations.ApiOperation;
 public class PedidoRest {
 	private static final List<Pedido> listaPedido=new ArrayList<>();
 	private static Integer ID_GEN = 1;
-	private static String API_REST_USUARIO = "http://localhost:50000/api";
+	private static String API_REST_USUARIO = "http://localhost:8081/api";
 	private static String ENDPOINT_OBRA = "/obra";
 	
 	@PostMapping
@@ -135,39 +135,41 @@ public class PedidoRest {
 	
 	@GetMapping
 	@ApiOperation(value="Obtiene los pedidos asociados al id y/o cuit de un cliente")
-	public ResponseEntity<List<Pedido>> getPor_Cuit_o_Id(@RequestParam(required=false) Integer cuit, @RequestParam(required=false) Integer idCliente){
+	public ResponseEntity<List<Pedido>> getPor_Cuit_o_Id(@RequestParam(required=false) String cuitCliente, @RequestParam(required=false) Integer idCliente){
 		RestTemplate restUsuario = new RestTemplate();
-		String uri="";
+		String uri=API_REST_USUARIO + ENDPOINT_OBRA;
 		
-		if(cuit==null && idCliente==null) {
+		if(cuitCliente==null && idCliente==null) {
 			return ResponseEntity.badRequest().build();
 		}
-		else if(cuit!=null && idCliente ==null) {
-			//TODO: NO HAY METODO EN EL API DE USUARIO para obtener obra por cuit.
-			//uri = API_REST_USUARIO + ENDPOINT_OBRA + "?cuit="+;
-		}
-		else if(cuit==null && idCliente != null) {
-			uri = API_REST_USUARIO + ENDPOINT_OBRA + "?id_cliente="+idCliente;
-		}
-		//(cuit!=null && idCliente != null)
 		else {
+			if(cuitCliente != null && idCliente == null) {
+				uri = uri +"?cuitCliente="+ cuitCliente;
+			}
+			if(idCliente != null && cuitCliente == null) {
+				uri = uri +"?idCliente="+ idCliente;
+			}
+			if(idCliente != null && cuitCliente != null) {
+				uri = uri +"?idCliente=" + idCliente + "&cuitCliente=" + cuitCliente;
+			}
+			ResponseEntity<Obra[]> respuesta = restUsuario.exchange(uri, HttpMethod.GET,null,Obra[].class );
+			Obra[] obrasRespuesta = respuesta.getBody();
+			
+			//Una vez que obtengo las obras, debo buscar los pedidos asosiados a las obras
+			List<Obra> obrasRespuestaLista = Arrays.asList(obrasRespuesta);
+			System.out.print("obrasRespuestaLista:("+obrasRespuestaLista.size() +") \n");
+			
+			//Buscamos los pedidos asoaciados a las obras recibidas del API usuario
+			List<Pedido> resultado = listaPedido.stream()
+					.filter(unPed -> obrasRespuestaLista.contains(unPed.getObra()))
+					.collect(Collectors.toList());
+			
+			System.out.print("Cantidad de pedidos que coinciden con las obras del cliente:("+resultado.size() +") \n");
+			
+			
+			return ResponseEntity.ok(resultado);
 			
 		}
-		ResponseEntity<Obra[]> respuesta = restUsuario.exchange(uri, HttpMethod.GET,null,Obra[].class );
-		Obra[] obrasRespuesta = respuesta.getBody();
-		//Una vez que obtengo las obras, debo buscar los pedidos asosiados a las obras
-		List<Obra> obrasRespuestaLista = Arrays.asList(obrasRespuesta);
-		
-		//Buscamos los pedidos asoaciados a las obras recibidas del API usuario
-		List<Pedido> resultado = listaPedido.stream()
-				.filter(unPed -> obrasRespuestaLista.contains(unPed.getObra()))
-				.collect(Collectors.toList());
-		
-		System.out.print("Cantidad de pedidos que coinciden con las obras del cliente:("+resultado.size() +") \n");
-		
-		
-		return ResponseEntity.ok(resultado);
-		
 		
 		
 		
