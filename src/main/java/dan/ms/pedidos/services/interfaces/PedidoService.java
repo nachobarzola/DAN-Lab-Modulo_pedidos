@@ -5,11 +5,12 @@ import java.util.Optional;
 
 import dan.ms.pedidos.domain.DetallePedido;
 import dan.ms.pedidos.domain.Pedido;
+import dan.ms.pedidos.excepciones.ExceptionRechazoPedido;
 
 
 public interface PedidoService {
 
-	public Pedido guardarPedido(Pedido ped);
+	public Pedido guardarPedido(Pedido ped) throws ExceptionRechazoPedido;
 
 	public Optional<Pedido> buscarPorId(Integer id);
 

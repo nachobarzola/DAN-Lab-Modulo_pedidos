@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import dan.ms.pedidos.domain.DetallePedido;
 import dan.ms.pedidos.domain.EstadoPedido;
 import dan.ms.pedidos.domain.Pedido;
+import dan.ms.pedidos.excepciones.ExceptionRechazoPedido;
 import dan.ms.pedidos.services.interfaces.PedidoService;
 import dan.ms.persistence.repositories.PedidoRepository;
 
@@ -21,7 +22,7 @@ public class PedidoServiceImp implements PedidoService {
 	// TODO : como obtengo el estado de BCRA de un cliente determinado?
 
 	@Override
-	public Pedido guardarPedido(Pedido ped) {
+	public Pedido guardarPedido(Pedido ped) throws ExceptionRechazoPedido {
 
 		Boolean stockDisponible = stockDisponiblePedido(ped);
 
@@ -29,9 +30,11 @@ public class PedidoServiceImp implements PedidoService {
 		Boolean generaSaldoDeudor = saldoDeudor > 0;
 
 		EstadoPedido esp = ped.getEstado();
+		
 
+	
 		if (stockDisponible) {
-
+			//Se cumple que hay stock - a
 			if (!generaSaldoDeudor) {
 				// Se cumple que hay stock y se cumple condicion b
 				esp.setEstado("ACEPTADO");
@@ -49,6 +52,12 @@ public class PedidoServiceImp implements PedidoService {
 				return this.pedidoRepo.save(ped);
 
 			}
+			
+			
+			esp.setEstado("RECHAZADO");
+			ped.setEstado(esp);
+			this.pedidoRepo.save(ped);
+			throw new ExceptionRechazoPedido(ped);
 
 		}
 		// Si no hay stock, el pedido se caga como pendiente

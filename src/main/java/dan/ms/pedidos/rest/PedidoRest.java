@@ -26,6 +26,7 @@ import org.springframework.web.client.RestTemplate;
 import dan.ms.pedidos.domain.DetallePedido;
 import dan.ms.pedidos.domain.Obra;
 import dan.ms.pedidos.domain.Pedido;
+import dan.ms.pedidos.excepciones.ExceptionRechazoPedido;
 import dan.ms.pedidos.services.interfaces.PedidoService;
 import io.swagger.annotations.ApiOperation;
 
@@ -53,12 +54,19 @@ public class PedidoRest {
 		List<DetallePedido> ldp = pedido.getDetalle();
 
 		if (pedido.getObra() != null && ldp != null && ldp.size() > 0) {
-			Stream<DetallePedido> detallePedido = ldp.stream().filter(unDetalle -> unDetalle.getCantidad() != null)
-					.filter(unDetalle -> unDetalle.getProducto() != null);
-			if (detallePedido.count() != 0) {
+			List<DetallePedido> detallePedido = ldp.stream().filter(unDetalle -> unDetalle.getCantidad() != null)
+					.filter(unDetalle -> unDetalle.getProducto() != null).collect(Collectors.toList());
+			if (detallePedido.size() != ldp.size()) {
 
-				if (pedidoService.guardarPedido(pedido) != null) {
-					return ResponseEntity.ok(pedido);
+				try {
+					if (pedidoService.guardarPedido(pedido) != null) {
+						return ResponseEntity.ok(pedido);
+					}
+				} catch (ExceptionRechazoPedido e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					return ResponseEntity.badRequest().build();
+
 				}
 
 			}
