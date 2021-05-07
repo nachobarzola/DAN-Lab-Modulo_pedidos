@@ -11,6 +11,7 @@ import dan.ms.pedidos.domain.EstadoPedido;
 import dan.ms.pedidos.domain.Pedido;
 import dan.ms.pedidos.excepciones.ExceptionRechazoPedido;
 import dan.ms.pedidos.services.interfaces.PedidoService;
+import dan.ms.pedidos.services.interfaces.RiesgoBCRAService;
 import dan.ms.persistence.repositories.PedidoRepository;
 
 @Service
@@ -19,7 +20,8 @@ public class PedidoServiceImp implements PedidoService {
 	@Autowired
 	PedidoRepository pedidoRepo;
 
-	// TODO : como obtengo el estado de BCRA de un cliente determinado?
+   @Autowired
+   RiesgoBCRAService riesgoBCRA;
 
 	@Override
 	public Pedido guardarPedido(Pedido ped) throws ExceptionRechazoPedido {
@@ -105,7 +107,10 @@ public class PedidoServiceImp implements PedidoService {
 
 	@Override
 	public Boolean situacionCrediticiaBajoRiesgoBCRA() {
-		// TODO Auto-generated method stub
+		if (riesgoBCRA.estadoCrediticio() != (1 | 2)) {
+			return false;
+		}
+
 		return true;
 	}
 
