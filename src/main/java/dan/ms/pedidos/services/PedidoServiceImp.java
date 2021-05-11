@@ -16,6 +16,8 @@ import dan.ms.persistence.repositories.PedidoRepository;
 
 @Service
 public class PedidoServiceImp implements PedidoService {
+	
+	private Integer ID_ESTADOPEDIDO_GEN=1;
 
 	@Autowired
 	PedidoRepository pedidoRepo;
@@ -31,10 +33,8 @@ public class PedidoServiceImp implements PedidoService {
 		double saldoDeudor = saldoDeudor(ped.getDetalle());
 		Boolean generaSaldoDeudor = saldoDeudor > 0;
 
-		EstadoPedido esp = ped.getEstado();
+		EstadoPedido esp = new EstadoPedido(ID_ESTADOPEDIDO_GEN++, "");
 		
-
-	
 		if (stockDisponible) {
 			//Se cumple que hay stock - a
 			if (!generaSaldoDeudor) {
