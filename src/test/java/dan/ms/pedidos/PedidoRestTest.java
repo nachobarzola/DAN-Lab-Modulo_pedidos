@@ -192,6 +192,7 @@ public class PedidoRestTest {
 
 	}
 	
+	
 	@Test
 	void crear_pedidoIncompleto_faltaDetallePedido() {
 		String server = "http://localhost:" + puerto + ENDPOINT_PEDIDO;
