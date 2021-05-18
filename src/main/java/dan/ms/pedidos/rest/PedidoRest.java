@@ -56,7 +56,7 @@ public class PedidoRest {
 		if (pedido.getObra() != null && ldp != null && ldp.size() > 0) {
 			List<DetallePedido> detallePedido = ldp.stream().filter(unDetalle -> unDetalle.getCantidad() != null)
 					.filter(unDetalle -> unDetalle.getProducto() != null).collect(Collectors.toList());
-			if (detallePedido.size() != ldp.size()) {
+			if (detallePedido.size() == ldp.size()) {
 
 				try {
 					if (pedidoService.guardarPedido(pedido) != null) {
@@ -84,7 +84,7 @@ public class PedidoRest {
 		detalle.setId(ID_GEN++);
 		OptionalInt index = IntStream.range(0, listaPedido.size())
 				.filter(i -> listaPedido.get(i).getId().equals(idPedido)).findFirst();
-		listaPedido.get(index.getAsInt()).setDetalle(detalle);
+		listaPedido.get(index.getAsInt()).addDetalle(detalle);
 		return ResponseEntity.ok(listaPedido.get(index.getAsInt()));
 
 	}
