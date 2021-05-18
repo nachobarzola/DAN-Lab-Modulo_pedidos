@@ -22,6 +22,7 @@ public class Pedido {
 	}
 	public Pedido() {
 		super();
+		this.detalle = new ArrayList<>();
 	}
 	public Integer getId() {
 		return id;
@@ -38,7 +39,10 @@ public class Pedido {
 	public List<DetallePedido> getDetalle() {
 		return detalle;
 	}
-	public void setDetalle(DetallePedido detalle) {
+	public void setDetalle(List<DetallePedido> detalle) {
+		this.detalle = detalle; 
+	}
+	public void addDetalle(DetallePedido detalle) {
 		this.detalle.add(detalle);
 	}
 	public EstadoPedido getEstado() {

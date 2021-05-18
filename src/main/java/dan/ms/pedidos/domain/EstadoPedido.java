@@ -5,13 +5,16 @@ public class EstadoPedido {
 	private String estado;
 	
 	
-	
-	
 	public EstadoPedido(Integer id, String estado) {
 		super();
 		this.id = id;
 		this.estado = estado;
 	}
+	
+	public EstadoPedido() {
+		super();
+	}
+
 	public Integer getId() {
 		return id;
 	}
