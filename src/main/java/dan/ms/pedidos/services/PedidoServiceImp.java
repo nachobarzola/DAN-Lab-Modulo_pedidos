@@ -1,5 +1,6 @@
 package dan.ms.pedidos.services;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -10,20 +11,25 @@ import dan.ms.pedidos.domain.DetallePedido;
 import dan.ms.pedidos.domain.EstadoPedido;
 import dan.ms.pedidos.domain.Pedido;
 import dan.ms.pedidos.excepciones.ExceptionRechazoPedido;
+import dan.ms.pedidos.services.dao.EstadoPedidoRepository;
+import dan.ms.pedidos.services.dao.PedidoRepository;
 import dan.ms.pedidos.services.interfaces.PedidoService;
 import dan.ms.pedidos.services.interfaces.RiesgoBCRAService;
-import dan.ms.persistence.repositories.PedidoRepository;
+import dan.ms.persistence.repositories.PedidoRepositoryInMemory;
 
 @Service
 public class PedidoServiceImp implements PedidoService {
-	
-	private Integer ID_ESTADOPEDIDO_GEN=1;
 
+	private Integer ID_ESTADOPEDIDO_GEN = 1;
+
+	/*
+	 * @Autowired PedidoRepositoryInMemory pedidoRepo;
+	 */
 	@Autowired
 	PedidoRepository pedidoRepo;
 
-   @Autowired
-   RiesgoBCRAService riesgoBCRA;
+	@Autowired
+	RiesgoBCRAService riesgoBCRA;
 
 	@Override
 	public Pedido guardarPedido(Pedido ped) throws ExceptionRechazoPedido {
@@ -33,14 +39,17 @@ public class PedidoServiceImp implements PedidoService {
 		double saldoDeudor = saldoDeudor(ped.getDetalle());
 		Boolean generaSaldoDeudor = saldoDeudor > 0;
 
-		EstadoPedido esp = new EstadoPedido(ID_ESTADOPEDIDO_GEN++, "");
-		
+		EstadoPedido esp = new EstadoPedido();
+
 		if (stockDisponible) {
-			//Se cumple que hay stock - a
+			// Se cumple que hay stock - a
 			if (!generaSaldoDeudor) {
 				// Se cumple que hay stock y se cumple condicion b
 				esp.setEstado("ACEPTADO");
+				esp.setId(1);
 				ped.setEstado(esp);
+				ped.setFechaPedido(Instant.now());
+
 				return this.pedidoRepo.save(ped);
 			}
 			double saldoDescubierto = saldoDescubierto();
@@ -50,21 +59,27 @@ public class PedidoServiceImp implements PedidoService {
 			if (generaSaldoDeudor && SaldoDeudorMenorQueDescubierto && situacionCrediticiaBajoRiesgo) {
 				// Se cumple que hay stock y se cumple condicion c
 				esp.setEstado("ACEPTADO");
+				esp.setId(1);
 				ped.setEstado(esp);
+				ped.setFechaPedido(Instant.now());
 				return this.pedidoRepo.save(ped);
 
 			}
-			
-			
+
 			esp.setEstado("RECHAZADO");
+			esp.setId(2);
 			ped.setEstado(esp);
+			ped.setFechaPedido(Instant.now());
 			this.pedidoRepo.save(ped);
+
 			throw new ExceptionRechazoPedido(ped);
 
 		}
-		// Si no hay stock, el pedido se caga como pendiente
+		// Si no hay stock, el pedido se carga como pendiente
 		esp.setEstado("PENDIENTE");
+		esp.setId(3);
 		ped.setEstado(esp);
+		ped.setFechaPedido(Instant.now());
 		return this.pedidoRepo.save(ped);
 
 	}
@@ -77,7 +92,7 @@ public class PedidoServiceImp implements PedidoService {
 
 	@Override
 	public void borrarPedido(Pedido ped) {
-		// TODO: Falta implementar borrarPedido
+		this.pedidoRepo.delete(ped);
 
 	}
 

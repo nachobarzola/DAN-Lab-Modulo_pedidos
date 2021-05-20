@@ -24,20 +24,29 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 import dan.ms.pedidos.domain.DetallePedido;
+import dan.ms.pedidos.domain.EstadoPedido;
 import dan.ms.pedidos.domain.Obra;
 import dan.ms.pedidos.domain.Pedido;
 import dan.ms.pedidos.domain.Producto;
+import dan.ms.pedidos.services.dao.EstadoPedidoRepository;
+import dan.ms.pedidos.services.dao.PedidoRepository;
 import dan.ms.pedidos.services.interfaces.PedidoService;
-import dan.ms.persistence.repositories.PedidoRepository;
+import dan.ms.persistence.repositories.PedidoRepositoryInMemory;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 public class PedidoRestTest {
 
 	private String ENDPOINT_PEDIDO = "/api/pedido";
 	private RestTemplate restTemplate = new RestTemplate();
-	
+
+	/*
+	 * @Autowired PedidoRepositoryInMemory pedidoRepo;
+	 */
 	@Autowired
 	PedidoRepository pedidoRepo;
+
+	@Autowired
+	EstadoPedidoRepository estadoRepo;
 
 	@Autowired
 	TestRestTemplate testRestTemplate;
@@ -47,10 +56,11 @@ public class PedidoRestTest {
 
 	@LocalServerPort
 	String puerto;
-	
+
 	@BeforeEach
 	void borrar_repositorio() {
 		pedidoRepo.deleteAll();
+
 	}
 
 	@Test
@@ -121,13 +131,14 @@ public class PedidoRestTest {
 
 		// Chequeo que no este persistido
 		Optional<Pedido> cli = pedidoService.buscarPorId(p1.getId());
-		//assertEquals(p1, cli.get()); Nunca van a ser iguales porque se agrega un estado
+		// assertEquals(p1, cli.get()); Nunca van a ser iguales porque se agrega un
+		// estado
 		assertNotEquals(Optional.empty(), cli);
+
+		pedidoService.borrarPedido(p1);
 
 	}
 
-	// Test unitario
-	
 	@Test
 	void crear_pedidoIncompleto_faltaObra() {
 		String server = "http://localhost:" + puerto + ENDPOINT_PEDIDO;
@@ -188,11 +199,10 @@ public class PedidoRestTest {
 
 		// Chequeo que no este persistido
 		Optional<Pedido> cli = pedidoService.buscarPorId(p1.getId());
-		assertEquals(Optional.empty(),cli);
+		assertEquals(Optional.empty(), cli);
 
 	}
-	
-	
+
 	@Test
 	void crear_pedidoIncompleto_faltaDetallePedido() {
 		String server = "http://localhost:" + puerto + ENDPOINT_PEDIDO;

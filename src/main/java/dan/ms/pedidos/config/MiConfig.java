@@ -2,15 +2,15 @@ package dan.ms.pedidos.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import dan.ms.persistence.repositories.PedidoRepository;
+import dan.ms.persistence.repositories.PedidoRepositoryInMemory;
 
 @Configuration
 public class MiConfig {
 
 	@Bean
-	public PedidoRepository pedidoRepository() {
+	public PedidoRepositoryInMemory pedidoRepositoryInMenory() {
 
-		return new PedidoRepository();
+		return new PedidoRepositoryInMemory();
 
 	}
 
