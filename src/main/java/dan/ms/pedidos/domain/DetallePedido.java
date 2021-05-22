@@ -1,9 +1,25 @@
 package dan.ms.pedidos.domain;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToOne;
+
+@Entity
 public class DetallePedido {
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY) //valor autonumerico
+	@Column(name="ID_DETALLE_PEDIDO")
 	private Integer id;
+	
 	private Integer cantidad;
 	private Double precio;
+	
+	@OneToOne
+	@JoinColumn(name="ID_PRODUCTO")
 	private Producto producto;
 	
 	public DetallePedido(Integer id, Integer cantidad, Double precio, Producto producto) {

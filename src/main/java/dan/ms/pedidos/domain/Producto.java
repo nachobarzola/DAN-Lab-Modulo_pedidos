@@ -1,6 +1,12 @@
 package dan.ms.pedidos.domain;
 
+import javax.persistence.Entity;
+import javax.persistence.Id;
+
+
+@Entity
 public class Producto {
+	@Id
 	private Integer id;
 	private String descripcion;
 	private Double precio;

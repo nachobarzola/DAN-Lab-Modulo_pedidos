@@ -6,7 +6,7 @@ import dan.ms.pedidos.domain.Pedido;
 import frsf.isi.dan.InMemoryRepository;
 
 @Repository
-public class PedidoRepository extends InMemoryRepository<Pedido> {
+public class PedidoRepositoryInMemory extends InMemoryRepository<Pedido> {
 
 
 	@Override

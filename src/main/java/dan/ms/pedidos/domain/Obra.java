@@ -1,7 +1,17 @@
 package dan.ms.pedidos.domain;
 
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+
+
+
+@Entity(name = "OBRA")
 public class Obra {
+	@Id
 	private Integer id;
+	@Column(name = "descripcion")
 	private String descripcion;
 	
 	public Obra(Integer id, String descripcion) {
