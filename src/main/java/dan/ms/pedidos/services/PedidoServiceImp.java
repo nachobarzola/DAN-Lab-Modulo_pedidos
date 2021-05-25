@@ -9,8 +9,10 @@ import org.springframework.stereotype.Service;
 
 import dan.ms.pedidos.domain.DetallePedido;
 import dan.ms.pedidos.domain.EstadoPedido;
+import dan.ms.pedidos.domain.Obra;
 import dan.ms.pedidos.domain.Pedido;
 import dan.ms.pedidos.excepciones.ExceptionRechazoPedido;
+import dan.ms.pedidos.services.dao.DetallePedidoRepository;
 import dan.ms.pedidos.services.dao.EstadoPedidoRepository;
 import dan.ms.pedidos.services.dao.PedidoRepository;
 import dan.ms.pedidos.services.interfaces.PedidoService;
@@ -20,13 +22,14 @@ import dan.ms.persistence.repositories.PedidoRepositoryInMemory;
 @Service
 public class PedidoServiceImp implements PedidoService {
 
-	private Integer ID_ESTADOPEDIDO_GEN = 1;
-
 	/*
 	 * @Autowired PedidoRepositoryInMemory pedidoRepo;
 	 */
 	@Autowired
 	PedidoRepository pedidoRepo;
+
+	@Autowired
+	DetallePedidoRepository detalleRepo;
 
 	@Autowired
 	RiesgoBCRAService riesgoBCRA;
@@ -97,9 +100,8 @@ public class PedidoServiceImp implements PedidoService {
 	}
 
 	@Override
-	public Pedido actualizarPedido(Pedido ped) {
-		// TODO Falta implementar actualizarPedido
-		return null;
+	public Pedido actualizarPedido(Pedido ped) throws ExceptionRechazoPedido {
+		return guardarPedido(ped);
 	}
 
 	@Override
@@ -127,6 +129,25 @@ public class PedidoServiceImp implements PedidoService {
 		}
 
 		return true;
+	}
+
+	@Override
+	public Pedido agregarDetallePedido(Pedido ped) throws ExceptionRechazoPedido {
+		return guardarPedido(ped);
+	}
+
+	@Override
+	public Optional<Pedido> buscarPorIdObra(Integer idObra) {
+		Obra ob = new Obra();
+		ob.setId(idObra);
+		return pedidoRepo.findByObra(ob);
+	}
+
+	@Override
+	public void borrarDetallePedido(DetallePedido det) {
+
+		detalleRepo.delete(det);
+
 	}
 
 }

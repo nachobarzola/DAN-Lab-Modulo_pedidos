@@ -16,7 +16,7 @@ public interface PedidoService {
 
 	public void borrarPedido(Pedido ped);
 
-	public Pedido actualizarPedido(Pedido ped);
+	public Pedido actualizarPedido(Pedido ped) throws ExceptionRechazoPedido;
 	
 	public Boolean stockDisponiblePedido(Pedido ped);
 	
@@ -24,5 +24,11 @@ public interface PedidoService {
 
 	public double saldoDescubierto();
 	
+	public Pedido agregarDetallePedido(Pedido ped) throws ExceptionRechazoPedido;
+	
 	public Boolean situacionCrediticiaBajoRiesgoBCRA();
+
+	public Optional<Pedido> buscarPorIdObra(Integer idObra);
+	
+	public void borrarDetallePedido(DetallePedido det);
 }
