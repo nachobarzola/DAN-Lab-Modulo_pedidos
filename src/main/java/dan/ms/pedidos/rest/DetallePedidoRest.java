@@ -34,23 +34,20 @@ public class DetallePedidoRest {
 	public ResponseEntity<Pedido> agregarItemPedido(@PathVariable Integer idPedido,
 			@RequestBody DetallePedido detalle) {
 
-		// TODO: Hacer test de este metodo.
-
 		Optional<Pedido> ped = pedidoService.buscarPorId(idPedido);
 
 		if (ped.isPresent()) {
 			ped.get().addDetalle(detalle);
 
 			try {
-				Pedido p = pedidoService.actualizarPedido(ped.get());
-				return ResponseEntity.ok(p);
+				
+				return ResponseEntity.ok(pedidoService.actualizarPedido(ped.get()).get());
 			} catch (ExceptionRechazoPedido e) {
 				return ResponseEntity.badRequest().build();
 
 			}
 
 		}
-
 		return ResponseEntity.notFound().build();
 
 	}

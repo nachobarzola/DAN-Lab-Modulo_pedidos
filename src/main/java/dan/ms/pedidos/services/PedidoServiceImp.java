@@ -13,11 +13,9 @@ import dan.ms.pedidos.domain.Obra;
 import dan.ms.pedidos.domain.Pedido;
 import dan.ms.pedidos.excepciones.ExceptionRechazoPedido;
 import dan.ms.pedidos.services.dao.DetallePedidoRepository;
-import dan.ms.pedidos.services.dao.EstadoPedidoRepository;
 import dan.ms.pedidos.services.dao.PedidoRepository;
 import dan.ms.pedidos.services.interfaces.PedidoService;
 import dan.ms.pedidos.services.interfaces.RiesgoBCRAService;
-import dan.ms.persistence.repositories.PedidoRepositoryInMemory;
 
 @Service
 public class PedidoServiceImp implements PedidoService {
@@ -35,7 +33,7 @@ public class PedidoServiceImp implements PedidoService {
 	RiesgoBCRAService riesgoBCRA;
 
 	@Override
-	public Pedido guardarPedido(Pedido ped) throws ExceptionRechazoPedido {
+	public Optional<Pedido> guardarPedido(Pedido ped) throws ExceptionRechazoPedido {
 
 		Boolean stockDisponible = stockDisponiblePedido(ped);
 
@@ -51,39 +49,37 @@ public class PedidoServiceImp implements PedidoService {
 				esp.setEstado("ACEPTADO");
 				esp.setId(1);
 				ped.setEstado(esp);
-				ped.setFechaPedido(Instant.now());
 
-				return this.pedidoRepo.save(ped);
+			} else {
+				double saldoDescubierto = saldoDescubierto();
+				Boolean SaldoDeudorMenorQueDescubierto = saldoDeudor < saldoDescubierto;
+
+				Boolean situacionCrediticiaBajoRiesgo = situacionCrediticiaBajoRiesgoBCRA();
+				if (generaSaldoDeudor && SaldoDeudorMenorQueDescubierto && situacionCrediticiaBajoRiesgo) {
+					// Se cumple que hay stock y se cumple condicion c
+					esp.setEstado("ACEPTADO");
+					esp.setId(1);
+					ped.setEstado(esp);
+
+				} else {
+
+					esp.setEstado("RECHAZADO");
+					esp.setId(2);
+					ped.setEstado(esp);
+					ped.setFechaPedido(Instant.now());
+					Optional.of(this.pedidoRepo.save(ped));
+					throw new ExceptionRechazoPedido(ped);
+				}
 			}
-			double saldoDescubierto = saldoDescubierto();
-			Boolean SaldoDeudorMenorQueDescubierto = saldoDeudor < saldoDescubierto;
-			// TODO: Como hacer el chequeo de riesgo BCRA
-			Boolean situacionCrediticiaBajoRiesgo = situacionCrediticiaBajoRiesgoBCRA();
-			if (generaSaldoDeudor && SaldoDeudorMenorQueDescubierto && situacionCrediticiaBajoRiesgo) {
-				// Se cumple que hay stock y se cumple condicion c
-				esp.setEstado("ACEPTADO");
-				esp.setId(1);
-				ped.setEstado(esp);
-				ped.setFechaPedido(Instant.now());
-				return this.pedidoRepo.save(ped);
 
-			}
-
-			esp.setEstado("RECHAZADO");
-			esp.setId(2);
+		} else {
+			// Si no hay stock, el pedido se carga como pendiente
+			esp.setEstado("PENDIENTE");
+			esp.setId(3);
 			ped.setEstado(esp);
-			ped.setFechaPedido(Instant.now());
-			this.pedidoRepo.save(ped);
-
-			throw new ExceptionRechazoPedido(ped);
-
 		}
-		// Si no hay stock, el pedido se carga como pendiente
-		esp.setEstado("PENDIENTE");
-		esp.setId(3);
-		ped.setEstado(esp);
 		ped.setFechaPedido(Instant.now());
-		return this.pedidoRepo.save(ped);
+		return Optional.of(this.pedidoRepo.saveAndFlush(ped));
 
 	}
 
@@ -100,8 +96,10 @@ public class PedidoServiceImp implements PedidoService {
 	}
 
 	@Override
-	public Pedido actualizarPedido(Pedido ped) throws ExceptionRechazoPedido {
-		return guardarPedido(ped);
+	public Optional<Pedido> actualizarPedido(Pedido ped) throws ExceptionRechazoPedido {
+		Optional<Pedido> pedido = guardarPedido(ped);
+
+		return pedido;
 	}
 
 	@Override
@@ -132,7 +130,7 @@ public class PedidoServiceImp implements PedidoService {
 	}
 
 	@Override
-	public Pedido agregarDetallePedido(Pedido ped) throws ExceptionRechazoPedido {
+	public Optional<Pedido> agregarDetallePedido(Pedido ped) throws ExceptionRechazoPedido {
 		return guardarPedido(ped);
 	}
 

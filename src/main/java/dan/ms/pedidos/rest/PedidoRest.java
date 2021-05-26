@@ -4,10 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
@@ -57,9 +54,9 @@ public class PedidoRest {
 			if (detallePedido.size() == ldp.size()) {
 
 				try {
-					if (pedidoService.guardarPedido(pedido) != null) {
-						return ResponseEntity.ok(pedido);
-					}
+					
+						return ResponseEntity.ok(pedidoService.guardarPedido(pedido).get());
+					
 				} catch (ExceptionRechazoPedido e) {
 					return ResponseEntity.badRequest().build();
 
@@ -87,7 +84,7 @@ public class PedidoRest {
 			p.setFechaPedido(pedido.getFechaPedido());
 			p.setObra(pedido.getObra());
 			try {
-				return ResponseEntity.ok(pedidoService.actualizarPedido(p));
+				return ResponseEntity.ok(pedidoService.actualizarPedido(p).get());
 			} catch (ExceptionRechazoPedido e) {
 				return ResponseEntity.badRequest().build();
 			}

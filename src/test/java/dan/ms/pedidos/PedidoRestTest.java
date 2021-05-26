@@ -1,8 +1,7 @@
 package dan.ms.pedidos;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -21,23 +20,20 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
 
 import dan.ms.pedidos.domain.DetallePedido;
-import dan.ms.pedidos.domain.EstadoPedido;
 import dan.ms.pedidos.domain.Obra;
 import dan.ms.pedidos.domain.Pedido;
 import dan.ms.pedidos.domain.Producto;
 import dan.ms.pedidos.services.dao.EstadoPedidoRepository;
 import dan.ms.pedidos.services.dao.PedidoRepository;
 import dan.ms.pedidos.services.interfaces.PedidoService;
-import dan.ms.persistence.repositories.PedidoRepositoryInMemory;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 public class PedidoRestTest {
 
 	private String ENDPOINT_PEDIDO = "/api/pedido";
-	private RestTemplate restTemplate = new RestTemplate();
+	
 
 	/*
 	 * @Autowired PedidoRepositoryInMemory pedidoRepo;
@@ -110,7 +106,7 @@ public class PedidoRestTest {
 		dp3.setCantidad(3);
 		dp3.setPrecio(181.5);
 
-		// Creo una obra
+		// Le asigno una obra
 
 		Obra ob = new Obra();
 		ob.setId(1);
@@ -129,13 +125,13 @@ public class PedidoRestTest {
 
 		assertTrue(respuesta.getStatusCode().equals(HttpStatus.OK));
 
-		// Chequeo que no este persistido
-		Optional<Pedido> cli = pedidoService.buscarPorId(p1.getId());
+		// Chequeo que este persistido
+		Optional<Pedido> cli = pedidoService.buscarPorId(respuesta.getBody().getId());
 		// assertEquals(p1, cli.get()); Nunca van a ser iguales porque se agrega un
 		// estado
 		assertNotEquals(Optional.empty(), cli);
 
-		pedidoService.borrarPedido(p1);
+		pedidoService.borrarPedido(respuesta.getBody());
 
 	}
 

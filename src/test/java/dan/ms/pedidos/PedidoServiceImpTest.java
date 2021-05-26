@@ -1,13 +1,10 @@
 package dan.ms.pedidos;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.time.Instant;
 
 import java.util.Optional;
 
-import org.hibernate.AssertionFailure;
 import org.junit.jupiter.api.BeforeEach;
 
 import org.junit.jupiter.api.Test;
@@ -98,7 +95,7 @@ public class PedidoServiceImpTest {
 		p1.setId(1);
 
 		// Persisto el pedido
-		Pedido pReturn = pedidoService.guardarPedido(p1);
+		Pedido pReturn = pedidoService.guardarPedido(p1).get();
 		
 		pReturn.setFechaPedido(null);
 		p1.setFechaPedido(null);
