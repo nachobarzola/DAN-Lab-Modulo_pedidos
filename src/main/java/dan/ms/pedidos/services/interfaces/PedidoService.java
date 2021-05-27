@@ -12,6 +12,8 @@ import dan.ms.pedidos.excepciones.ExceptionRechazoPedido;
 public interface PedidoService {
 
 	public Optional<Pedido> guardarPedido(Pedido ped) throws ExceptionRechazoPedido;
+	
+	public Optional<Pedido> evaluarEstadoPedido(Pedido ped) throws ExceptionRechazoPedido;
 
 	public Optional<Pedido> buscarPorId(Integer id);
 
@@ -34,4 +36,5 @@ public interface PedidoService {
 	public Optional<List<Pedido>> buscarPorEstado(EstadoPedido estado);
 	
 	public void borrarDetallePedido(DetallePedido det);
+	
 }

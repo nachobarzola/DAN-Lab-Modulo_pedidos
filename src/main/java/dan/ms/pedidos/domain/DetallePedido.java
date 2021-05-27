@@ -24,9 +24,8 @@ public class DetallePedido {
 	
 	
 	
-	public DetallePedido(Integer id, Integer cantidad, Double precio, Producto producto) {
+	public DetallePedido(Integer cantidad, Double precio, Producto producto) {
 		super();
-		this.id = id;
 		this.cantidad = cantidad;
 		this.precio = precio;
 		this.producto = producto;

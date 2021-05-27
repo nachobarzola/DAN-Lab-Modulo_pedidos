@@ -33,10 +33,12 @@ public class DetallePedidoRest {
 	@ApiOperation(value = "Agrega  detalle pedido al pedido recibido como id")
 	public ResponseEntity<Pedido> agregarItemPedido(@PathVariable Integer idPedido,
 			@RequestBody DetallePedido detalle) {
-
+		
+		
 		Optional<Pedido> ped = pedidoService.buscarPorId(idPedido);
 
 		if (ped.isPresent()) {
+			detalle.setId(null);
 			ped.get().addDetalle(detalle);
 
 			try {

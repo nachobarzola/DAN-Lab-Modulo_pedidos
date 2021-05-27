@@ -1,7 +1,7 @@
 package dan.ms.pedidos;
 
 import java.time.Instant;
-
+import java.util.Date;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +33,6 @@ import dan.ms.pedidos.services.interfaces.PedidoService;
 public class PedidoRestTest {
 
 	private String ENDPOINT_PEDIDO = "/api/pedido";
-	
 
 	/*
 	 * @Autowired PedidoRepositoryInMemory pedidoRepo;
@@ -116,7 +115,7 @@ public class PedidoRestTest {
 		p1.addDetalle(dp2);
 		p1.addDetalle(dp3);
 		p1.setObra(ob);
-		p1.setFechaPedido(Instant.now());
+		p1.setFechaPedido(Date.from(Instant.now()));
 		p1.setId(1);
 
 		HttpEntity<Pedido> requestPedido = new HttpEntity<>(p1);
@@ -184,7 +183,7 @@ public class PedidoRestTest {
 		p1.addDetalle(dp1);
 		p1.addDetalle(dp2);
 		p1.addDetalle(dp3);
-		p1.setFechaPedido(Instant.now());
+		p1.setFechaPedido(Date.from(Instant.now()));
 		p1.setId(1);
 
 		HttpEntity<Pedido> requestPedido = new HttpEntity<>(p1);
@@ -214,7 +213,7 @@ public class PedidoRestTest {
 		ob.setId(1);
 		ob.setDescripcion("La famosa obra chiquitita");
 
-		p1.setFechaPedido(Instant.now());
+		p1.setFechaPedido(Date.from(Instant.now()));
 		p1.setObra(ob);
 		p1.setId(1);
 
@@ -281,7 +280,7 @@ public class PedidoRestTest {
 		p1.addDetalle(dp2);
 		p1.addDetalle(dp3);
 		p1.setObra(ob);
-		p1.setFechaPedido(Instant.now());
+		p1.setFechaPedido(Date.from(Instant.now()));
 		p1.setId(1);
 
 		HttpEntity<Pedido> requestPedido = new HttpEntity<>(p1);

@@ -1,5 +1,7 @@
 package dan.ms.pedidos;
 
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +42,9 @@ public class DetallePedidoRestTest {
 
 	@Autowired
 	DetallePedidoRepository detalleRepo;
+	
+	@Autowired
+	EstadoPedidoRepository estadoRepo;
 
 	@Autowired
 	TestRestTemplate testRestTemplate;
@@ -250,6 +255,7 @@ public class DetallePedidoRestTest {
 		p1.addDetalle(dp2);
 		p1.addDetalle(dp3);
 		p1.setObra(ob);
+		p1.setFechaPedido(Date.from(Instant.now()));
 		p1.setId(1);
 		HttpEntity<Pedido> requestPedido = new HttpEntity<>(p1);
 		ResponseEntity<Pedido> respuesta = testRestTemplate.exchange(server, HttpMethod.POST, requestPedido,

@@ -1,7 +1,7 @@
 package dan.ms.pedidos.domain;
 
-import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import javax.persistence.CascadeType;
@@ -14,6 +14,8 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
 
 @Entity
 public class Pedido {
@@ -22,11 +24,11 @@ public class Pedido {
 	@GeneratedValue(strategy = GenerationType.IDENTITY) // valor autonumerico
 	@Column(name = "ID_PEDIDO")
 	private Integer id;
-	private Instant fechaPedido;
+	
+	@Temporal(TemporalType.DATE)
+	private Date fechaPedido;
 
-	/*
-	 * @OneToMany(cascade = CascadeType.PERSIST,targetEntity = DetallePedido.class)
-	 */
+
 	@OneToMany(cascade = CascadeType.ALL,fetch = FetchType.EAGER)
 	@JoinColumn(name = "ID_PEDIDO")
 	private List<DetallePedido> detalle = new ArrayList<>();
@@ -39,9 +41,8 @@ public class Pedido {
 	@JoinColumn(name = "ID_OBRA")
 	private Obra obra;
 
-	public Pedido(Integer id, Instant fechaPedido, List<DetallePedido> detalle, EstadoPedido estado, Obra obra) {
+	public Pedido(Date fechaPedido, List<DetallePedido> detalle, EstadoPedido estado, Obra obra) {
 		super();
-		this.id = id;
 		this.fechaPedido = fechaPedido;
 		this.detalle = detalle;
 		this.estado = estado;
@@ -61,11 +62,11 @@ public class Pedido {
 		this.id = id;
 	}
 
-	public Instant getFechaPedido() {
+	public Date getFechaPedido() {
 		return fechaPedido;
 	}
 
-	public void setFechaPedido(Instant fechaPedido) {
+	public void setFechaPedido(Date fechaPedido) {
 		this.fechaPedido = fechaPedido;
 	}
 

@@ -1,6 +1,5 @@
 package dan.ms.pedidos.services;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,50 +34,6 @@ public class PedidoServiceImp implements PedidoService {
 	@Override
 	public Optional<Pedido> guardarPedido(Pedido ped) throws ExceptionRechazoPedido {
 
-		Boolean stockDisponible = stockDisponiblePedido(ped);
-
-		double saldoDeudor = saldoDeudor(ped.getDetalle());
-		Boolean generaSaldoDeudor = saldoDeudor > 0;
-
-		EstadoPedido esp = new EstadoPedido();
-
-		if (stockDisponible) {
-			// Se cumple que hay stock - a
-			if (!generaSaldoDeudor) {
-				// Se cumple que hay stock y se cumple condicion b
-				esp.setEstado("ACEPTADO");
-				esp.setId(1);
-				ped.setEstado(esp);
-
-			} else {
-				double saldoDescubierto = saldoDescubierto();
-				Boolean SaldoDeudorMenorQueDescubierto = saldoDeudor < saldoDescubierto;
-
-				Boolean situacionCrediticiaBajoRiesgo = situacionCrediticiaBajoRiesgoBCRA();
-				if (generaSaldoDeudor && SaldoDeudorMenorQueDescubierto && situacionCrediticiaBajoRiesgo) {
-					// Se cumple que hay stock y se cumple condicion c
-					esp.setEstado("ACEPTADO");
-					esp.setId(1);
-					ped.setEstado(esp);
-
-				} else {
-
-					esp.setEstado("RECHAZADO");
-					esp.setId(2);
-					ped.setEstado(esp);
-					ped.setFechaPedido(Instant.now());
-					Optional.of(this.pedidoRepo.save(ped));
-					throw new ExceptionRechazoPedido(ped);
-				}
-			}
-
-		} else {
-			// Si no hay stock, el pedido se carga como pendiente
-			esp.setEstado("PENDIENTE");
-			esp.setId(3);
-			ped.setEstado(esp);
-		}
-		ped.setFechaPedido(Instant.now());
 		return Optional.of(this.pedidoRepo.saveAndFlush(ped));
 
 	}
@@ -150,8 +105,55 @@ public class PedidoServiceImp implements PedidoService {
 
 	@Override
 	public Optional<List<Pedido>> buscarPorEstado(EstadoPedido estado) {
-		
+
 		return pedidoRepo.findByEstado(estado);
+	}
+
+	@Override
+	public Optional<Pedido> evaluarEstadoPedido(Pedido ped) throws ExceptionRechazoPedido {
+
+		Boolean stockDisponible = stockDisponiblePedido(ped);
+
+		double saldoDeudor = saldoDeudor(ped.getDetalle());
+		Boolean generaSaldoDeudor = saldoDeudor > 0;
+
+		EstadoPedido esp = new EstadoPedido();
+
+		if (stockDisponible) {
+			// Se cumple que hay stock - a
+			if (!generaSaldoDeudor) {
+				// Se cumple que hay stock y se cumple condicion b
+				esp.setEstado("ACEPTADO");
+				esp.setId(1);
+				ped.setEstado(esp);
+
+			} else {
+				double saldoDescubierto = saldoDescubierto();
+				Boolean SaldoDeudorMenorQueDescubierto = saldoDeudor < saldoDescubierto;
+
+				Boolean situacionCrediticiaBajoRiesgo = situacionCrediticiaBajoRiesgoBCRA();
+				if (generaSaldoDeudor && SaldoDeudorMenorQueDescubierto && situacionCrediticiaBajoRiesgo) {
+					// Se cumple que hay stock y se cumple condicion c
+					esp.setEstado("ACEPTADO");
+					// esp.setId(1);
+					ped.setEstado(esp);
+
+				} else {
+
+					esp.setEstado("RECHAZADO");
+					// esp.setId(2);
+					ped.setEstado(esp);
+					throw new ExceptionRechazoPedido(ped);
+				}
+			}
+
+		} else {
+			// Si no hay stock, el pedido se carga como pendiente
+			esp.setEstado("PENDIENTE");
+			// esp.setId(3);
+			ped.setEstado(esp);
+		}
+		return Optional.of(ped);
 	}
 
 }

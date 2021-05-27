@@ -25,6 +25,7 @@ import dan.ms.pedidos.domain.EstadoPedido;
 import dan.ms.pedidos.domain.Obra;
 import dan.ms.pedidos.domain.Pedido;
 import dan.ms.pedidos.excepciones.ExceptionRechazoPedido;
+import dan.ms.pedidos.services.interfaces.EstadoPedidoService;
 import dan.ms.pedidos.services.interfaces.PedidoService;
 import io.swagger.annotations.ApiOperation;
 
@@ -34,6 +35,9 @@ public class PedidoRest {
 	private static String API_REST_USUARIO = "http://localhost:8081/api";
 	private static String ENDPOINT_OBRA = "/obra";
 
+	@Autowired
+	EstadoPedidoService estadoPedidoService;
+	
 	@Autowired
 	PedidoService pedidoService;
 
@@ -55,11 +59,19 @@ public class PedidoRest {
 			if (detallePedido.size() == ldp.size()) {
 
 				try {
-					//TODO: siempre se debe crear como nuevo, deberiamos cambiar la logica de PedidoServiceImp
-					//Posible solucion pasarle un parametro "Extra a guardarPedido" para que le setee estado nuevo.
+					// TODO: siempre se debe crear como nuevo, deberiamos cambiar la logica de
+					// PedidoServiceImp
+					// Posible solucion pasarle un parametro "Extra a guardarPedido" para que le
+					// setee estado nuevo.
 					
-						return ResponseEntity.ok(pedidoService.guardarPedido(pedido).get());
-					
+					EstadoPedido estP = estadoPedidoService.obtenerEstadoPedidoPorDescripcion("NUEVO");
+					pedido.setEstado(estP);
+					pedido.setId(null);
+					for(DetallePedido dp : pedido.getDetalle()){
+						dp.setId(null);
+					}
+					return ResponseEntity.ok(pedidoService.guardarPedido(pedido).get());
+
 				} catch (ExceptionRechazoPedido e) {
 					return ResponseEntity.badRequest().build();
 
@@ -73,12 +85,34 @@ public class PedidoRest {
 
 	}
 
+	@PutMapping(path = "/estado/{idpedido}")
+	@ApiOperation(value = "Actualizar estado de pedido")
+	public ResponseEntity<Pedido> actualizarEstadoPedido(@RequestBody EstadoPedido estadoPedido,
+			@PathVariable Integer idPedido) {
+		Optional<Pedido> ped = pedidoService.buscarPorId(idPedido);
+
+		if (ped.isPresent()) {
+			ped.get().setEstado(estadoPedido);
+			try {
+				;
+				return ResponseEntity.ok(pedidoService.actualizarPedido(ped.get()).get());
+			} catch (ExceptionRechazoPedido e) {
+				ResponseEntity.badRequest().build();
+			}
+
+		}
+
+		return ResponseEntity.notFound().build();
+
+	}
+
 	@PutMapping(path = "/{idPedido}")
 	@ApiOperation(value = "Actualiza pedido dado un id")
 	public ResponseEntity<Pedido> actualizar(@RequestBody Pedido pedido, @PathVariable Integer idPedido) {
 
-		//TODO: Al actualizar el pedido, se reemplaza todo, tambien si tenia varios detalles y aca pongo uno
-		//entonces, los demas quedan en null. Esto esta bien??
+		// TODO: Al actualizar el pedido, se reemplaza todo, tambien si tenia varios
+		// detalles y aca pongo uno
+		// entonces, los demas quedan en null. Esto esta bien??
 		Optional<Pedido> ped = pedidoService.buscarPorId(idPedido);
 		if (ped.isPresent()) {
 			Pedido p = ped.get();
@@ -112,22 +146,20 @@ public class PedidoRest {
 
 	@GetMapping("/estado/{idEstado}")
 	@ApiOperation(value = "Obtiene los pedidos por id de estadoPedido")
-	
-	public ResponseEntity<List<Pedido>> getPorEstado(@PathVariable Integer idEstado){
-		 
+
+	public ResponseEntity<List<Pedido>> getPorEstado(@PathVariable Integer idEstado) {
+
 		EstadoPedido e = new EstadoPedido();
 		e.setId(idEstado);
 		Optional<List<Pedido>> listPe = pedidoService.buscarPorEstado(e);
-		
-		if(listPe.isPresent()) {
+
+		if (listPe.isPresent()) {
 			return ResponseEntity.ok(listPe.get());
 		}
 		return ResponseEntity.notFound().build();
-		
-		
-		
+
 	}
-	
+
 	@GetMapping(path = "/{idPedido}")
 	@ApiOperation(value = "Obtener pedido por su ID")
 	public ResponseEntity<Pedido> getPorId(@PathVariable Integer idPedido) {
@@ -170,18 +202,18 @@ public class PedidoRest {
 			System.out.print("obrasRespuestaLista:(" + obrasRespuestaLista.size() + ") \n");
 
 			// Buscamos los pedidos asoaciados a las obras recibidas del API usuario
-			
+
 			List<Pedido> resultado = new ArrayList<Pedido>();
 			Optional<Pedido> pedido = Optional.empty();
-			
-				for(Obra obra: obrasRespuestaLista) {
-					pedido = pedidoService.buscarPorIdObra(obra.getId());
-				 	if(pedido.isPresent()) {
-				 	 resultado.add(pedido.get());	
-				 	}
-				 	pedido = Optional.empty();
+
+			for (Obra obra : obrasRespuestaLista) {
+				pedido = pedidoService.buscarPorIdObra(obra.getId());
+				if (pedido.isPresent()) {
+					resultado.add(pedido.get());
 				}
-			
+				pedido = Optional.empty();
+			}
+
 			System.out
 					.print("Cantidad de pedidos que coinciden con las obras del cliente:(" + resultado.size() + ") \n");
 
