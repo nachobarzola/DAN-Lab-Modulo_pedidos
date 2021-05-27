@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
 import dan.ms.pedidos.domain.DetallePedido;
+import dan.ms.pedidos.domain.EstadoPedido;
 import dan.ms.pedidos.domain.Obra;
 import dan.ms.pedidos.domain.Pedido;
 import dan.ms.pedidos.excepciones.ExceptionRechazoPedido;
@@ -54,6 +55,8 @@ public class PedidoRest {
 			if (detallePedido.size() == ldp.size()) {
 
 				try {
+					//TODO: siempre se debe crear como nuevo, deberiamos cambiar la logica de PedidoServiceImp
+					//Posible solucion pasarle un parametro "Extra a guardarPedido" para que le setee estado nuevo.
 					
 						return ResponseEntity.ok(pedidoService.guardarPedido(pedido).get());
 					
@@ -107,6 +110,24 @@ public class PedidoRest {
 
 	}
 
+	@GetMapping("/estado/{idEstado}")
+	@ApiOperation(value = "Obtiene los pedidos por id de estadoPedido")
+	
+	public ResponseEntity<List<Pedido>> getPorEstado(@PathVariable Integer idEstado){
+		 
+		EstadoPedido e = new EstadoPedido();
+		e.setId(idEstado);
+		Optional<List<Pedido>> listPe = pedidoService.buscarPorEstado(e);
+		
+		if(listPe.isPresent()) {
+			return ResponseEntity.ok(listPe.get());
+		}
+		return ResponseEntity.notFound().build();
+		
+		
+		
+	}
+	
 	@GetMapping(path = "/{idPedido}")
 	@ApiOperation(value = "Obtener pedido por su ID")
 	public ResponseEntity<Pedido> getPorId(@PathVariable Integer idPedido) {

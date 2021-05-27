@@ -148,4 +148,10 @@ public class PedidoServiceImp implements PedidoService {
 
 	}
 
+	@Override
+	public Optional<List<Pedido>> buscarPorEstado(EstadoPedido estado) {
+		
+		return pedidoRepo.findByEstado(estado);
+	}
+
 }

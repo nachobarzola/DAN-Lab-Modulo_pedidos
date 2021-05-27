@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import dan.ms.pedidos.domain.DetallePedido;
+import dan.ms.pedidos.domain.EstadoPedido;
 import dan.ms.pedidos.domain.Pedido;
 import dan.ms.pedidos.excepciones.ExceptionRechazoPedido;
 
@@ -29,6 +30,8 @@ public interface PedidoService {
 	public Boolean situacionCrediticiaBajoRiesgoBCRA();
 
 	public Optional<Pedido> buscarPorIdObra(Integer idObra);
+	
+	public Optional<List<Pedido>> buscarPorEstado(EstadoPedido estado);
 	
 	public void borrarDetallePedido(DetallePedido det);
 }
