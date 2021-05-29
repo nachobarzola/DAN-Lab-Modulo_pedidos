@@ -182,7 +182,14 @@ public class PedidoServiceImp implements PedidoService {
 
 	private void enviarPedidoACola(Pedido p) {
 		Map<String, Integer> pedidoMap = new HashMap<>();
-		pedidoMap.put("idDetallePedido", p.getDetalle().get(0).getId());
+		
+		pedidoMap.put("cantidadDetalle", p.getDetalle().size());
+		int i=1;
+		for(DetallePedido det: p.getDetalle()) {
+			pedidoMap.put("idDetallePedido"+i,det.getId());
+			i++;
+		}
+		
 		jms.convertAndSend("COLA_PEDIDOS", pedidoMap);
 
 	}
