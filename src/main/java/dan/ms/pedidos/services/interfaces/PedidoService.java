@@ -31,7 +31,7 @@ public interface PedidoService {
 	
 	public Boolean situacionCrediticiaBajoRiesgoBCRA();
 
-	public Optional<Pedido> buscarPorIdObra(Integer idObra);
+	public List<Pedido> buscarPorIdObra(Integer idObra);
 	
 	public Optional<List<Pedido>> buscarPorEstado(EstadoPedido estado);
 	

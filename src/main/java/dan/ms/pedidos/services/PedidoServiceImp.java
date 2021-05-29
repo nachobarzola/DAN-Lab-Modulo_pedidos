@@ -16,6 +16,7 @@ import dan.ms.pedidos.domain.Pedido;
 import dan.ms.pedidos.excepciones.ExceptionRechazoPedido;
 import dan.ms.pedidos.services.dao.DetallePedidoRepository;
 import dan.ms.pedidos.services.dao.EstadoPedidoRepository;
+import dan.ms.pedidos.services.dao.ObraRepository;
 import dan.ms.pedidos.services.dao.PedidoRepository;
 import dan.ms.pedidos.services.interfaces.PedidoService;
 import dan.ms.pedidos.services.interfaces.ProductoRestExternoService;
@@ -38,6 +39,9 @@ public class PedidoServiceImp implements PedidoService {
 
 	@Autowired
 	RiesgoBCRAService riesgoBCRA;
+	
+	@Autowired
+	ObraRepository obraRepo;
 
 	@Autowired
 	ProductoRestExternoService productoExtService;
@@ -104,10 +108,14 @@ public class PedidoServiceImp implements PedidoService {
 	}
 
 	@Override
-	public Optional<Pedido> buscarPorIdObra(Integer idObra) {
+	public List<Pedido> buscarPorIdObra(Integer idObra) {
 		Obra ob = new Obra();
-		ob.setId(idObra);
-		return pedidoRepo.findByObra(ob);
+		 Optional<Obra> obra = obraRepo.findById(idObra);
+		 if(obra.isPresent()) {
+			 ob=obra.get();
+			 return pedidoRepo.findByObra(ob).get();
+		 }
+		return null;
 	}
 
 	@Override

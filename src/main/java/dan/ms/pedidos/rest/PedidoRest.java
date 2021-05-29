@@ -181,9 +181,9 @@ public class PedidoRest {
 
 	@GetMapping(path = "/obra/{idObra}")
 	@ApiOperation(value = "Obtener pedido dado el id de la obra")
-	public ResponseEntity<Pedido> getPorIdObra(@PathVariable Integer idObra) {
+	public ResponseEntity<List<Pedido>> getPorIdObra(@PathVariable Integer idObra) {
 
-		return ResponseEntity.of(pedidoService.buscarPorIdObra(idObra));
+		return ResponseEntity.ok(pedidoService.buscarPorIdObra(idObra));
 
 	}
 
@@ -215,21 +215,21 @@ public class PedidoRest {
 
 			// Buscamos los pedidos asoaciados a las obras recibidas del API usuario
 
-			List<Pedido> resultado = new ArrayList<Pedido>();
-			Optional<Pedido> pedido = Optional.empty();
+			List<Pedido> listaResultado = new ArrayList<>();
+			
 
 			for (Obra obra : obrasRespuestaLista) {
-				pedido = pedidoService.buscarPorIdObra(obra.getId());
-				if (pedido.isPresent()) {
-					resultado.add(pedido.get());
+				List<Pedido> listaPedido = new ArrayList<>();
+				listaPedido = pedidoService.buscarPorIdObra(obra.getId());
+				if (listaPedido != null) {
+					listaResultado.addAll(listaPedido);
 				}
-				pedido = Optional.empty();
 			}
 
 			System.out
-					.print("Cantidad de pedidos que coinciden con las obras del cliente:(" + resultado.size() + ") \n");
+					.print("Cantidad de pedidos que coinciden con las obras del cliente:(" + listaResultado.size() + ") \n");
 
-			return ResponseEntity.ok(resultado);
+			return ResponseEntity.ok(listaResultado);
 
 		}
 

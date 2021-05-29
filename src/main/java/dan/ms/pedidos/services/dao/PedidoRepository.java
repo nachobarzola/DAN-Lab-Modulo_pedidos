@@ -13,7 +13,7 @@ import dan.ms.pedidos.domain.Pedido;
 @Repository
 public interface PedidoRepository extends JpaRepository<Pedido, Integer> {
 
-	Optional<Pedido> findByObra(Obra ob);
+	Optional<List<Pedido>> findByObra(Obra ob);
 
 	Optional<List<Pedido>> findByEstado(EstadoPedido estado);
 	
