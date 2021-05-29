@@ -11,7 +11,7 @@ import dan.ms.pedidos.excepciones.ExceptionRechazoPedido;
 
 public interface PedidoService {
 
-	public Optional<Pedido> guardarPedido(Pedido ped) throws ExceptionRechazoPedido;
+	public Optional<Pedido> guardarPedido(Pedido ped);
 	
 	public Optional<Pedido> evaluarEstadoPedido(Pedido ped) throws ExceptionRechazoPedido;
 
@@ -19,7 +19,7 @@ public interface PedidoService {
 
 	public void borrarPedido(Pedido ped);
 
-	public Optional<Pedido> actualizarPedido(Pedido ped) throws ExceptionRechazoPedido;
+	public Optional<Pedido> actualizarPedido(Pedido ped);
 	
 	public Boolean stockDisponiblePedido(Pedido ped);
 	
@@ -27,7 +27,7 @@ public interface PedidoService {
 
 	public double saldoDescubierto();
 	
-	public Optional<Pedido> agregarDetallePedido(Pedido ped) throws ExceptionRechazoPedido;
+	public Optional<Pedido> agregarDetallePedido(Pedido ped);
 	
 	public Boolean situacionCrediticiaBajoRiesgoBCRA();
 

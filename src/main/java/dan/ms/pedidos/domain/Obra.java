@@ -5,9 +5,12 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
+import org.springframework.transaction.annotation.Transactional;
+
 
 
 @Entity(name = "OBRA")
+@Transactional(readOnly = true)
 public class Obra {
 	@Id
 	private Integer id;

@@ -32,12 +32,12 @@ import io.swagger.annotations.ApiOperation;
 @RestController
 @RequestMapping("/api/pedido")
 public class PedidoRest {
-	private static String API_REST_USUARIO = "http://localhost:8081/api";
+	private static String API_REST_USUARIO = "http://localhost:9000/api";
 	private static String ENDPOINT_OBRA = "/obra";
 
 	@Autowired
 	EstadoPedidoService estadoPedidoService;
-	
+
 	@Autowired
 	PedidoService pedidoService;
 
@@ -53,29 +53,18 @@ public class PedidoRest {
 
 		List<DetallePedido> ldp = pedido.getDetalle();
 
-		if (pedido.getObra() != null && ldp != null && ldp.size() > 0) {
+		if (pedido.getObra() != null && ldp != null && ldp.size() > 0 && pedido.getFechaPedido() != null) {
 			List<DetallePedido> detallePedido = ldp.stream().filter(unDetalle -> unDetalle.getCantidad() != null)
 					.filter(unDetalle -> unDetalle.getProducto() != null).collect(Collectors.toList());
 			if (detallePedido.size() == ldp.size()) {
 
-				try {
-					// TODO: siempre se debe crear como nuevo, deberiamos cambiar la logica de
-					// PedidoServiceImp
-					// Posible solucion pasarle un parametro "Extra a guardarPedido" para que le
-					// setee estado nuevo.
-					
-					EstadoPedido estP = estadoPedidoService.obtenerEstadoPedidoPorDescripcion("NUEVO");
-					pedido.setEstado(estP);
-					pedido.setId(null);
-					for(DetallePedido dp : pedido.getDetalle()){
-						dp.setId(null);
-					}
-					return ResponseEntity.ok(pedidoService.guardarPedido(pedido).get());
-
-				} catch (ExceptionRechazoPedido e) {
-					return ResponseEntity.badRequest().build();
-
+				EstadoPedido estP = estadoPedidoService.obtenerEstadoPedidoPorDescripcion("NUEVO");
+				pedido.setEstado(estP);
+				pedido.setId(null);
+				for (DetallePedido dp : pedido.getDetalle()) {
+					dp.setId(null);
 				}
+				return ResponseEntity.ok(pedidoService.guardarPedido(pedido).get());
 
 			}
 
@@ -91,14 +80,37 @@ public class PedidoRest {
 			@PathVariable Integer idPedido) {
 		Optional<Pedido> ped = pedidoService.buscarPorId(idPedido);
 
+		// Se puede cambiar cualquier estado a nuevo.
+
 		if (ped.isPresent()) {
-			ped.get().setEstado(estadoPedido);
-			try {
-				;
-				return ResponseEntity.ok(pedidoService.actualizarPedido(ped.get()).get());
-			} catch (ExceptionRechazoPedido e) {
-				ResponseEntity.badRequest().build();
+
+			switch (estadoPedido.getEstado()) {
+			case ("NUEVO"): {
+
+				ped.get().setEstado(estadoPedido);
+
+				break;
 			}
+
+			// Si se cambia el estado a “CONFIRMADO” el servicio que lo reciba deberá luego
+			// guardarlo como: ACEPTADO, PENDIENTE, o RECHAZADO de acuerdo a las
+			// siguientes regla
+			case ("CONFIRMADO"): {
+				try {
+					ped = pedidoService.evaluarEstadoPedido(ped.get());
+				} catch (ExceptionRechazoPedido e) {
+					return ResponseEntity.badRequest().build();
+				}
+
+				break;
+			}
+			default: {
+				return ResponseEntity.notFound().build();
+			}
+
+			}
+
+			return ResponseEntity.ok(pedidoService.actualizarPedido(ped.get()).get());
 
 		}
 
@@ -120,11 +132,9 @@ public class PedidoRest {
 			p.setEstado(pedido.getEstado());
 			p.setFechaPedido(pedido.getFechaPedido());
 			p.setObra(pedido.getObra());
-			try {
-				return ResponseEntity.ok(pedidoService.actualizarPedido(p).get());
-			} catch (ExceptionRechazoPedido e) {
-				return ResponseEntity.badRequest().build();
-			}
+
+			return ResponseEntity.ok(pedidoService.actualizarPedido(p).get());
+
 		}
 		return ResponseEntity.notFound().build();
 

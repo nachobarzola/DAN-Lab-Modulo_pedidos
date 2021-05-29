@@ -3,8 +3,11 @@ package dan.ms.pedidos.domain;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
+import org.springframework.transaction.annotation.Transactional;
+
 
 @Entity
+@Transactional(readOnly = true)
 public class Producto {
 	@Id
 	private Integer id;

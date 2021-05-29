@@ -14,6 +14,7 @@ import dan.ms.pedidos.excepciones.ExceptionRechazoPedido;
 import dan.ms.pedidos.services.dao.DetallePedidoRepository;
 import dan.ms.pedidos.services.dao.PedidoRepository;
 import dan.ms.pedidos.services.interfaces.PedidoService;
+import dan.ms.pedidos.services.interfaces.ProductoRestExternoService;
 import dan.ms.pedidos.services.interfaces.RiesgoBCRAService;
 
 @Service
@@ -30,9 +31,12 @@ public class PedidoServiceImp implements PedidoService {
 
 	@Autowired
 	RiesgoBCRAService riesgoBCRA;
+	
+	@Autowired
+	ProductoRestExternoService productoExtService;
 
 	@Override
-	public Optional<Pedido> guardarPedido(Pedido ped) throws ExceptionRechazoPedido {
+	public Optional<Pedido> guardarPedido(Pedido ped){
 
 		return Optional.of(this.pedidoRepo.saveAndFlush(ped));
 
@@ -51,7 +55,7 @@ public class PedidoServiceImp implements PedidoService {
 	}
 
 	@Override
-	public Optional<Pedido> actualizarPedido(Pedido ped) throws ExceptionRechazoPedido {
+	public Optional<Pedido> actualizarPedido(Pedido ped){
 		Optional<Pedido> pedido = guardarPedido(ped);
 
 		return pedido;
@@ -59,8 +63,8 @@ public class PedidoServiceImp implements PedidoService {
 
 	@Override
 	public Boolean stockDisponiblePedido(Pedido ped) {
-		// TODO Auto-generated method StockDisponiblePedido
-		return true;
+
+		return productoExtService.hayStockDisponible(ped.getDetalle()) ;
 	}
 
 	@Override
@@ -85,7 +89,7 @@ public class PedidoServiceImp implements PedidoService {
 	}
 
 	@Override
-	public Optional<Pedido> agregarDetallePedido(Pedido ped) throws ExceptionRechazoPedido {
+	public Optional<Pedido> agregarDetallePedido(Pedido ped){
 		return guardarPedido(ped);
 	}
 

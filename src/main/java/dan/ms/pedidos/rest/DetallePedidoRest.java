@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import dan.ms.pedidos.domain.DetallePedido;
 import dan.ms.pedidos.domain.Pedido;
-import dan.ms.pedidos.excepciones.ExceptionRechazoPedido;
 import dan.ms.pedidos.services.interfaces.PedidoService;
 import io.swagger.annotations.ApiOperation;
 
@@ -33,21 +32,14 @@ public class DetallePedidoRest {
 	@ApiOperation(value = "Agrega  detalle pedido al pedido recibido como id")
 	public ResponseEntity<Pedido> agregarItemPedido(@PathVariable Integer idPedido,
 			@RequestBody DetallePedido detalle) {
-		
-		
+
 		Optional<Pedido> ped = pedidoService.buscarPorId(idPedido);
 
 		if (ped.isPresent()) {
 			detalle.setId(null);
 			ped.get().addDetalle(detalle);
 
-			try {
-				
-				return ResponseEntity.ok(pedidoService.actualizarPedido(ped.get()).get());
-			} catch (ExceptionRechazoPedido e) {
-				return ResponseEntity.badRequest().build();
-
-			}
+			return ResponseEntity.ok(pedidoService.actualizarPedido(ped.get()).get());
 
 		}
 		return ResponseEntity.notFound().build();
@@ -73,12 +65,9 @@ public class DetallePedidoRest {
 				det.get(index.getAsInt()).setPrecio(detalle.getPrecio());
 				det.get(index.getAsInt()).setProducto(detalle.getProducto());
 				pedido.setDetalle(det);
-				try {
-					pedidoService.actualizarPedido(pedido);
-					return ResponseEntity.ok(det.get(index.getAsInt()));
-				} catch (ExceptionRechazoPedido e) {
-					return ResponseEntity.badRequest().build();
-				}
+
+				pedidoService.actualizarPedido(pedido);
+				return ResponseEntity.ok(det.get(index.getAsInt()));
 
 			}
 
@@ -100,19 +89,15 @@ public class DetallePedidoRest {
 			OptionalInt index = IntStream.range(0, det.size()).filter(i -> det.get(i).getId().equals(idDetalle))
 					.findFirst();
 			if (index.isPresent()) {
-				DetallePedido detalle =  det.get(index.getAsInt());
+				DetallePedido detalle = det.get(index.getAsInt());
 				det.remove(index.getAsInt());
 				pedido.setDetalle(det);
-				try {
-					pedidoService.actualizarPedido(pedido);
-					pedidoService.borrarDetallePedido(detalle);
-					return ResponseEntity.ok(det);
-				} catch (ExceptionRechazoPedido e) {
-					return ResponseEntity.badRequest().build();
-				}
-				
+
+				pedidoService.actualizarPedido(pedido);
+				pedidoService.borrarDetallePedido(detalle);
+				return ResponseEntity.ok(det);
+
 			}
-			
 
 		}
 		return ResponseEntity.notFound().build();
