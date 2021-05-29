@@ -74,7 +74,7 @@ public class PedidoRest {
 
 	}
 
-	@PutMapping(path = "/estado/{idpedido}")
+	@PutMapping(path = "/estado/{idPedido}")
 	@ApiOperation(value = "Actualizar estado de pedido")
 	public ResponseEntity<Pedido> actualizarEstadoPedido(@RequestBody EstadoPedido estadoPedido,
 			@PathVariable Integer idPedido) {
@@ -97,7 +97,9 @@ public class PedidoRest {
 			// siguientes regla
 			case ("CONFIRMADO"): {
 				try {
+					// Ponemos el pedido en la cola
 					ped = pedidoService.evaluarEstadoPedido(ped.get());
+
 				} catch (ExceptionRechazoPedido e) {
 					return ResponseEntity.badRequest().build();
 				}

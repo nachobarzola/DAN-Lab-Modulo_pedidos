@@ -25,17 +25,17 @@ public class ProductoRestExternoServiceImp implements ProductoRestExternoService
 		RestTemplate restProducto = new RestTemplate();
 		String uri = API_REST_PRODUCTO + ENDPOINT_PRODUCTO;
 		//
-		ResponseEntity<Object[]> respuesta;
+		ResponseEntity<Boolean> respuesta;
 
 		//
 
 		uri = uri + "/detallePedido";
 
 		HttpEntity<List<DetallePedido>> requestDetallePedido = new HttpEntity<>(detP);
-		respuesta = restProducto.exchange(uri, HttpMethod.GET, requestDetallePedido, Object[].class);
+		respuesta = restProducto.exchange(uri, HttpMethod.POST, requestDetallePedido, Boolean.class);
 
 		if (respuesta.getStatusCode().equals(HttpStatus.OK)) {
-			return true;
+			return respuesta.getBody();
 		} else {
 			return false;
 		}

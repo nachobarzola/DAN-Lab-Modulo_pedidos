@@ -3,6 +3,8 @@ package dan.ms.pedidos.domain;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class Obra {
 	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY) // valor autonumerico
+	@Column(name = "ID_OBRA")
 	private Integer id;
 	@Column(name = "descripcion")
 	private String descripcion;

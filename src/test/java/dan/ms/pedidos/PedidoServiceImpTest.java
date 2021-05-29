@@ -20,6 +20,7 @@ import dan.ms.pedidos.domain.Obra;
 import dan.ms.pedidos.domain.Pedido;
 import dan.ms.pedidos.domain.Producto;
 import dan.ms.pedidos.excepciones.ExceptionRechazoPedido;
+import dan.ms.pedidos.services.dao.DetallePedidoRepository;
 import dan.ms.pedidos.services.interfaces.PedidoService;
 import dan.ms.persistence.repositories.PedidoRepositoryInMemory;
 
@@ -31,10 +32,17 @@ public class PedidoServiceImpTest {
 
 	@Autowired
 	private PedidoRepositoryInMemory pedidoRepo;
+	
+	@Autowired
+	private DetallePedidoRepository detalleRepo;
 
+	
+	
 	@BeforeEach
 	void borrar_repositorio() {
+		detalleRepo.deleteAll();
 		pedidoRepo.deleteAll();
+		
 	}
 
 	// Test de integracion con DB/repositorio
@@ -96,6 +104,8 @@ public class PedidoServiceImpTest {
 
 		// Persisto el pedido
 		Pedido pReturn = pedidoService.guardarPedido(p1).get();
+		
+		p1.setId(pReturn.getId());
 		
 		pReturn.setFechaPedido(null);
 		p1.setFechaPedido(null);
@@ -180,8 +190,8 @@ public class PedidoServiceImpTest {
 		p1.setId(1);
 
 		// Persisto el pedido
-		pedidoService.guardarPedido(p1);
- 
+		Optional<Pedido> p = pedidoService.guardarPedido(p1);
+		p1.setId(p.get().getId());
 		//TODO: problema con time stamp. Comparar todos los campos menos ese
 		// Lo busco a donde se persistio
 		Optional<Pedido> optP = pedidoService.buscarPorId(p1.getId());
