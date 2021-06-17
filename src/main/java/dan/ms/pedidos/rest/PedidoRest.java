@@ -4,10 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
@@ -24,19 +21,22 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
 import dan.ms.pedidos.domain.DetallePedido;
+import dan.ms.pedidos.domain.EstadoPedido;
 import dan.ms.pedidos.domain.Obra;
 import dan.ms.pedidos.domain.Pedido;
 import dan.ms.pedidos.excepciones.ExceptionRechazoPedido;
+import dan.ms.pedidos.services.interfaces.EstadoPedidoService;
 import dan.ms.pedidos.services.interfaces.PedidoService;
 import io.swagger.annotations.ApiOperation;
 
 @RestController
 @RequestMapping("/api/pedido")
 public class PedidoRest {
-	private static final List<Pedido> listaPedido = new ArrayList<>();
-	private static Integer ID_GEN = 1;
-	private static String API_REST_USUARIO = "http://localhost:8081/api";
+	private static String API_REST_USUARIO = "http://localhost:9000/api";
 	private static String ENDPOINT_OBRA = "/obra";
+
+	@Autowired
+	EstadoPedidoService estadoPedidoService;
 
 	@Autowired
 	PedidoService pedidoService;
@@ -53,21 +53,18 @@ public class PedidoRest {
 
 		List<DetallePedido> ldp = pedido.getDetalle();
 
-		if (pedido.getObra() != null && ldp != null && ldp.size() > 0) {
+		if (pedido.getObra() != null && ldp != null && ldp.size() > 0 && pedido.getFechaPedido() != null) {
 			List<DetallePedido> detallePedido = ldp.stream().filter(unDetalle -> unDetalle.getCantidad() != null)
 					.filter(unDetalle -> unDetalle.getProducto() != null).collect(Collectors.toList());
 			if (detallePedido.size() == ldp.size()) {
 
-				try {
-					if (pedidoService.guardarPedido(pedido) != null) {
-						return ResponseEntity.ok(pedido);
-					}
-				} catch (ExceptionRechazoPedido e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-					return ResponseEntity.badRequest().build();
-
+				EstadoPedido estP = estadoPedidoService.obtenerEstadoPedidoPorDescripcion("NUEVO");
+				pedido.setEstado(estP);
+				pedido.setId(null);
+				for (DetallePedido dp : pedido.getDetalle()) {
+					dp.setId(null);
 				}
+				return ResponseEntity.ok(pedidoService.guardarPedido(pedido).get());
 
 			}
 
@@ -77,85 +74,120 @@ public class PedidoRest {
 
 	}
 
-	@PostMapping("/{idPedido}/detalle")
-	@ApiOperation(value = "Agrega detalle pedido al pedido recibido como id")
-	public ResponseEntity<Pedido> agregarItemPedido(@PathVariable Integer idPedido,
-			@RequestBody DetallePedido detalle) {
-		detalle.setId(ID_GEN++);
-		OptionalInt index = IntStream.range(0, listaPedido.size())
-				.filter(i -> listaPedido.get(i).getId().equals(idPedido)).findFirst();
-		listaPedido.get(index.getAsInt()).addDetalle(detalle);
-		return ResponseEntity.ok(listaPedido.get(index.getAsInt()));
+	@PutMapping(path = "/estado/{idPedido}")
+	@ApiOperation(value = "Actualizar estado de pedido")
+	public ResponseEntity<Pedido> actualizarEstadoPedido(@RequestBody EstadoPedido estadoPedido,
+			@PathVariable Integer idPedido) {
+		Optional<Pedido> ped = pedidoService.buscarPorId(idPedido);
+
+		// Se puede cambiar cualquier estado a nuevo.
+
+		if (ped.isPresent()) {
+
+			switch (estadoPedido.getEstado()) {
+			case ("NUEVO"): {
+
+				ped.get().setEstado(estadoPedido);
+
+				break;
+			}
+
+			// Si se cambia el estado a “CONFIRMADO” el servicio que lo reciba deberá luego
+			// guardarlo como: ACEPTADO, PENDIENTE, o RECHAZADO de acuerdo a las
+			// siguientes regla
+			case ("CONFIRMADO"): {
+				try {
+					// Ponemos el pedido en la cola
+					ped = pedidoService.evaluarEstadoPedido(ped.get());
+
+				} catch (ExceptionRechazoPedido e) {
+					return ResponseEntity.badRequest().build();
+				}
+
+				break;
+			}
+			default: {
+				return ResponseEntity.notFound().build();
+			}
+
+			}
+
+			return ResponseEntity.ok(pedidoService.actualizarPedido(ped.get()).get());
+
+		}
+
+		return ResponseEntity.notFound().build();
 
 	}
 
 	@PutMapping(path = "/{idPedido}")
 	@ApiOperation(value = "Actualiza pedido dado un id")
 	public ResponseEntity<Pedido> actualizar(@RequestBody Pedido pedido, @PathVariable Integer idPedido) {
-		OptionalInt index = IntStream.range(0, listaPedido.size())
-				.filter(i -> listaPedido.get(i).getId().equals(idPedido)).findFirst();
-		if (index.isPresent()) {
-			listaPedido.set(index.getAsInt(), pedido);
-			return ResponseEntity.ok(pedido);
-		} else {
-			return ResponseEntity.notFound().build();
+
+		// TODO: Al actualizar el pedido, se reemplaza todo, tambien si tenia varios
+		// detalles y aca pongo uno
+		// entonces, los demas quedan en null. Esto esta bien??
+		Optional<Pedido> ped = pedidoService.buscarPorId(idPedido);
+		if (ped.isPresent()) {
+			Pedido p = ped.get();
+			p.setDetalle(pedido.getDetalle());
+			p.setEstado(pedido.getEstado());
+			p.setFechaPedido(pedido.getFechaPedido());
+			p.setObra(pedido.getObra());
+
+			return ResponseEntity.ok(pedidoService.actualizarPedido(p).get());
+
 		}
+		return ResponseEntity.notFound().build();
+
 	}
 
 	@DeleteMapping(path = "/{idPedido}")
 	@ApiOperation(value = "Borra un pedido dado un id")
 	public ResponseEntity<Pedido> borrar(@PathVariable Integer idPedido) {
-		OptionalInt index = IntStream.range(0, listaPedido.size())
-				.filter(i -> listaPedido.get(i).getId().equals(idPedido)).findFirst();
-		if (index.isPresent()) {
-			listaPedido.remove(index.getAsInt());
-			return ResponseEntity.ok().build();
-		} else {
-			return ResponseEntity.notFound().build();
-		}
-	}
 
-	// TODO: REFACTORIZAR CODIGO: ver si se puede hacer mas simple!
-	@DeleteMapping(path = "/{idPedido}/detalle/{idDetalle}")
-	@ApiOperation(value = "Borra el detalle de un pedido dado el id del pedido y el id del detalle")
-	public ResponseEntity<DetallePedido> borrar(@PathVariable Integer idPedido, @PathVariable Integer idDetalle) {
+		Optional<Pedido> pe = pedidoService.buscarPorId(idPedido);
 
-		OptionalInt indexPedido = getIndexIdPedido(idPedido);
-		// Verificamos si existe ese pedido con esa id.
-		if (indexPedido.isPresent()) {
-
-			Pedido ped = listaPedido.get(indexPedido.getAsInt());
-			OptionalInt indexDetalle = getIndexIdDetallePedido(ped, idDetalle);
-
-			if (indexDetalle.isPresent()) {
-				DetallePedido detallePedido = listaPedido.get(indexPedido.getAsInt()).getDetalle()
-						.get(indexDetalle.getAsInt());
-				listaPedido.get(indexPedido.getAsInt()).getDetalle().remove(indexDetalle.getAsInt());
-				return ResponseEntity.ok(detallePedido);
-			} else {
+		if (pe.isPresent()) {
+			
+			if(pedidoService.borrarPedido(pe.get()).isEmpty()) {
 				return ResponseEntity.notFound().build();
 			}
-
-		} else {
-			return ResponseEntity.notFound().build();
+			return ResponseEntity.ok().build();
 		}
+		return ResponseEntity.notFound().build();
+
+	}
+
+	@GetMapping("/estado/{idEstado}")
+	@ApiOperation(value = "Obtiene los pedidos por id de estadoPedido")
+
+	public ResponseEntity<List<Pedido>> getPorEstado(@PathVariable Integer idEstado) {
+
+		EstadoPedido e = new EstadoPedido();
+		e.setId(idEstado);
+		Optional<List<Pedido>> listPe = pedidoService.buscarPorEstado(e);
+
+		if (listPe.isPresent()) {
+			return ResponseEntity.ok(listPe.get());
+		}
+		return ResponseEntity.notFound().build();
 
 	}
 
 	@GetMapping(path = "/{idPedido}")
 	@ApiOperation(value = "Obtener pedido por su ID")
 	public ResponseEntity<Pedido> getPorId(@PathVariable Integer idPedido) {
-		Optional<Pedido> pedido = listaPedido.stream().filter(unPedido -> unPedido.getId().equals(idPedido))
-				.findFirst();
+		Optional<Pedido> pedido = pedidoService.buscarPorId(idPedido);
 		return ResponseEntity.of(pedido);
 	}
 
 	@GetMapping(path = "/obra/{idObra}")
 	@ApiOperation(value = "Obtener pedido dado el id de la obra")
-	public ResponseEntity<Pedido> getPorIdObra(@PathVariable Integer idObra) {
-		Optional<Pedido> pedido = listaPedido.stream().filter(unPedido -> unPedido.getObra().getId().equals(idObra))
-				.findFirst();
-		return ResponseEntity.of(pedido);
+	public ResponseEntity<List<Pedido>> getPorIdObra(@PathVariable Integer idObra) {
+
+		return ResponseEntity.ok(pedidoService.buscarPorIdObra(idObra));
+
 	}
 
 	@GetMapping
@@ -185,53 +217,25 @@ public class PedidoRest {
 			System.out.print("obrasRespuestaLista:(" + obrasRespuestaLista.size() + ") \n");
 
 			// Buscamos los pedidos asoaciados a las obras recibidas del API usuario
-			List<Pedido> resultado = listaPedido.stream().filter(unPed -> obrasRespuestaLista.contains(unPed.getObra()))
-					.collect(Collectors.toList());
 
-			System.out
-					.print("Cantidad de pedidos que coinciden con las obras del cliente:(" + resultado.size() + ") \n");
+			List<Pedido> listaResultado = new ArrayList<>();
+			
 
-			return ResponseEntity.ok(resultado);
-
-		}
-
-	}
-
-	@GetMapping(path = "/{idPedido}/detalle/{idDetalle}")
-	@ApiOperation(value = "Obtener pedido dado una id y un detalleId")
-	public ResponseEntity<DetallePedido> getPorIdDetalle(@PathVariable Integer idPedido,
-			@PathVariable Integer idDetalle) {
-		OptionalInt indexPedido = getIndexIdPedido(idPedido);
-		// Verificamos si existe ese pedido con esa id.
-		if (indexPedido.isPresent()) {
-
-			Pedido ped = listaPedido.get(indexPedido.getAsInt());
-			OptionalInt indexDetalle = getIndexIdDetallePedido(ped, idDetalle);
-
-			// Verificamos si existe el detalle con idDetalle.
-			if (indexDetalle.isPresent()) {
-				DetallePedido detallePedido = listaPedido.get(indexPedido.getAsInt()).getDetalle()
-						.get(indexDetalle.getAsInt());
-				return ResponseEntity.ok(detallePedido);
-			} else {
-				return ResponseEntity.notFound().build();
+			for (Obra obra : obrasRespuestaLista) {
+				List<Pedido> listaPedido = new ArrayList<>();
+				listaPedido = pedidoService.buscarPorIdObra(obra.getId());
+				if (listaPedido != null) {
+					listaResultado.addAll(listaPedido);
+				}
 			}
 
-		} else {
-			return ResponseEntity.notFound().build();
+			System.out
+					.print("Cantidad de pedidos que coinciden con las obras del cliente:(" + listaResultado.size() + ") \n");
+
+			return ResponseEntity.ok(listaResultado);
+
 		}
 
-	}
-
-	// METODOS AUXILIARES
-	private OptionalInt getIndexIdPedido(Integer idPedido) {
-		return IntStream.range(0, listaPedido.size()).filter(i -> listaPedido.get(i).getId().equals(idPedido))
-				.findFirst();
-	}
-
-	private OptionalInt getIndexIdDetallePedido(Pedido pedido, Integer idDetalle) {
-		return IntStream.range(0, pedido.getDetalle().size())
-				.filter(j -> pedido.getDetalle().get(j).getId().equals(idDetalle)).findFirst();
 	}
 
 }

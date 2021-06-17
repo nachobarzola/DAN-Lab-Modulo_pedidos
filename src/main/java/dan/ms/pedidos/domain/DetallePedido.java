@@ -22,9 +22,10 @@ public class DetallePedido {
 	@JoinColumn(name="ID_PRODUCTO")
 	private Producto producto;
 	
-	public DetallePedido(Integer id, Integer cantidad, Double precio, Producto producto) {
+	
+	
+	public DetallePedido(Integer cantidad, Double precio, Producto producto) {
 		super();
-		this.id = id;
 		this.cantidad = cantidad;
 		this.precio = precio;
 		this.producto = producto;
@@ -68,7 +69,7 @@ public class DetallePedido {
 
 	@Override
 	public String toString() {
-		return "DetallePedido [id=" + id + ", cantidad=" + cantidad + ", precio=" + precio + ", producto=" + producto
+		return "DetallePedido [id=" + id + ", cantidad=" + cantidad + ", precio=" + precio + ", producto=" + producto.toString()
 				+ "]";
 	}	
 	
