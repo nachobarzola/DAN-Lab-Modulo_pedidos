@@ -17,7 +17,7 @@ public interface PedidoService {
 
 	public Optional<Pedido> buscarPorId(Integer id);
 
-	public void borrarPedido(Pedido ped);
+	public Optional<Pedido> borrarPedido(Pedido ped);
 
 	public Optional<Pedido> actualizarPedido(Pedido ped);
 	
@@ -35,6 +35,6 @@ public interface PedidoService {
 	
 	public Optional<List<Pedido>> buscarPorEstado(EstadoPedido estado);
 	
-	public void borrarDetallePedido(DetallePedido det);
+	public Optional<DetallePedido> borrarDetallePedido(DetallePedido det);
 	
 }

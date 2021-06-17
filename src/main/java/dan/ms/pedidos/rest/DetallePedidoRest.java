@@ -51,7 +51,6 @@ public class DetallePedidoRest {
 	public ResponseEntity<DetallePedido> actualizar(@PathVariable Integer idPedido, @PathVariable Integer idDetalle,
 			@RequestBody DetallePedido detalle) {
 
-		// TODO: Hacer test de actualizar el detalle de un pedido
 
 		Optional<Pedido> ped = pedidoService.buscarPorId(idPedido);
 
@@ -77,24 +76,27 @@ public class DetallePedidoRest {
 	}
 
 	@DeleteMapping(path = "/pedido/{idPedido}/detalle/{idDetalle}")
-
 	@ApiOperation(value = "Borra el detalle de un pedido dado el id del pedido y el id del detalle")
 	public ResponseEntity<List<DetallePedido>> borrar(@PathVariable Integer idPedido, @PathVariable Integer idDetalle) {
 
-		// TODO: Hacer test de borrar el detalle de un pedido
 		Optional<Pedido> ped = pedidoService.buscarPorId(idPedido);
 		if (ped.isPresent()) {
 			Pedido pedido = ped.get();
 			List<DetallePedido> det = pedido.getDetalle();
-			OptionalInt index = IntStream.range(0, det.size()).filter(i -> det.get(i).getId().equals(idDetalle))
+			OptionalInt index = IntStream.range(0, det.size())
+					.filter(i -> det.get(i).getId().equals(idDetalle))
 					.findFirst();
+					
 			if (index.isPresent()) {
 				DetallePedido detalle = det.get(index.getAsInt());
 				det.remove(index.getAsInt());
 				pedido.setDetalle(det);
 
 				pedidoService.actualizarPedido(pedido);
-				pedidoService.borrarDetallePedido(detalle);
+				if(pedidoService.borrarDetallePedido(detalle).isEmpty()) {
+					return ResponseEntity.notFound().build();
+				}
+				
 				return ResponseEntity.ok(det);
 
 			}

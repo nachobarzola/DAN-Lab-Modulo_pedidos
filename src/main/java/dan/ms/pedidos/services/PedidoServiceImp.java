@@ -8,16 +8,21 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import dan.ms.pedidos.domain.DetallePedido;
 import dan.ms.pedidos.domain.EstadoPedido;
 import dan.ms.pedidos.domain.Obra;
 import dan.ms.pedidos.domain.Pedido;
+import dan.ms.pedidos.domain.Producto;
 import dan.ms.pedidos.excepciones.ExceptionRechazoPedido;
 import dan.ms.pedidos.services.dao.DetallePedidoRepository;
 import dan.ms.pedidos.services.dao.EstadoPedidoRepository;
 import dan.ms.pedidos.services.dao.ObraRepository;
 import dan.ms.pedidos.services.dao.PedidoRepository;
+import dan.ms.pedidos.services.dao.ProductoRepository;
+import dan.ms.pedidos.services.interfaces.DetallePedidoService;
 import dan.ms.pedidos.services.interfaces.PedidoService;
 import dan.ms.pedidos.services.interfaces.ProductoRestExternoService;
 import dan.ms.pedidos.services.interfaces.RiesgoBCRAService;
@@ -31,17 +36,27 @@ public class PedidoServiceImp implements PedidoService {
 	@Autowired
 	PedidoRepository pedidoRepo;
 
-	@Autowired
-	DetallePedidoRepository detalleRepo;
+	/*
+	 * @Autowired DetallePedidoRepository detalleRepo;
+	 */
 
 	@Autowired
 	EstadoPedidoRepository estadoRepo;
 
 	@Autowired
 	RiesgoBCRAService riesgoBCRA;
-	
+
+	@Autowired
+	DetallePedidoService detallePedidoService;
+
+	@Autowired
+	DetallePedidoRepository detalleRepo;
+
 	@Autowired
 	ObraRepository obraRepo;
+
+	@Autowired
+	ProductoRepository productoRepo;
 
 	@Autowired
 	ProductoRestExternoService productoExtService;
@@ -49,22 +64,79 @@ public class PedidoServiceImp implements PedidoService {
 	@Autowired
 	JmsTemplate jms; // jms: java message service
 
+	@Transactional
 	@Override
 	public Optional<Pedido> guardarPedido(Pedido ped) {
+		Pedido pedidoAGuardar = new Pedido();
+		if (ped.getId() != null) {
+			pedidoAGuardar.setId(ped.getId());
+		}
+		pedidoAGuardar.setEstado(ped.getEstado());
+		pedidoAGuardar.setFechaPedido(ped.getFechaPedido());
 
-		return Optional.of(this.pedidoRepo.saveAndFlush(ped));
+		// Primero Guardo detalle pedido
 
+		Optional<List<DetallePedido>> optionalDetalle = detallePedidoService.guardarDetallePedido(ped.getDetalle());
+		Optional<Obra> ob = obraRepo.findById(ped.getObra().getId());
+
+		if (ob.isEmpty() || optionalDetalle.isEmpty()) {
+			return Optional.empty();
+		}
+		pedidoAGuardar.setObra(ob.get());
+
+		// Seteo la lista de detalles al pedido a guardar
+
+		for (DetallePedido deta : optionalDetalle.get()) {
+
+			Optional<Producto> p = productoRepo.findById(deta.getProducto().getId());
+			if (p.isEmpty()) {
+				return Optional.empty();
+			}
+			deta.setProducto(p.get());
+
+		}
+
+		pedidoAGuardar.setDetalle(optionalDetalle.get());
+
+		try {
+			// Guardamos el pedido
+			pedidoAGuardar = pedidoRepo.saveAndFlush(pedidoAGuardar);
+
+			return Optional.of(pedidoAGuardar);
+		} catch (Exception e) {
+			// e.printStackTrace();
+			TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+			return Optional.empty();
+		}
 	}
 
 	@Override
 	public Optional<Pedido> buscarPorId(Integer id) {
-
-		return this.pedidoRepo.findById(id);
+		Optional<Pedido> pedido = this.pedidoRepo.findById(id);
+		if (pedido.isPresent()) {
+			List<DetallePedido> detp = detalleRepo.findByIdPedido(id);
+			if (!detp.isEmpty()) {
+				pedido.get().setDetalle(detp);
+			}
+		}
+		return pedido;
 	}
 
+	@Transactional
 	@Override
-	public void borrarPedido(Pedido ped) {
-		this.pedidoRepo.delete(ped);
+	public Optional<Pedido> borrarPedido(Pedido ped) {
+		try {
+			// Borramos el pedido
+			this.pedidoRepo.delete(ped);
+
+			if (this.detallePedidoService.BorrarDetallePedido(ped.getDetalle()).isEmpty()) {
+				TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+				return Optional.empty();
+			}
+			return Optional.of(ped);
+		} catch (Exception e) {
+			return Optional.empty();
+		}
 
 	}
 
@@ -110,18 +182,18 @@ public class PedidoServiceImp implements PedidoService {
 	@Override
 	public List<Pedido> buscarPorIdObra(Integer idObra) {
 		Obra ob = new Obra();
-		 Optional<Obra> obra = obraRepo.findById(idObra);
-		 if(obra.isPresent()) {
-			 ob=obra.get();
-			 return pedidoRepo.findByObra(ob).get();
-		 }
+		Optional<Obra> obra = obraRepo.findById(idObra);
+		if (obra.isPresent()) {
+			ob = obra.get();
+			return pedidoRepo.findByObra(ob).get();
+		}
 		return null;
 	}
 
 	@Override
-	public void borrarDetallePedido(DetallePedido det) {
+	public Optional<DetallePedido> borrarDetallePedido(DetallePedido det) {
 
-		detalleRepo.delete(det);
+		return detallePedidoService.BorrarDetallePedido(det);
 
 	}
 
@@ -132,7 +204,7 @@ public class PedidoServiceImp implements PedidoService {
 	}
 
 	public EstadoPedido obtenerEstadoPedido(String estado) {
-		
+
 		return estadoRepo.findByEstado(estado);
 
 	}
@@ -190,14 +262,14 @@ public class PedidoServiceImp implements PedidoService {
 
 	private void enviarPedidoACola(Pedido p) {
 		Map<String, Integer> pedidoMap = new HashMap<>();
-		
+
 		pedidoMap.put("cantidadDetalle", p.getDetalle().size());
-		int i=1;
-		for(DetallePedido det: p.getDetalle()) {
-			pedidoMap.put("idDetallePedido"+i,det.getId());
+		int i = 1;
+		for (DetallePedido det : p.getDetalle()) {
+			pedidoMap.put("idDetallePedido" + i, det.getId());
 			i++;
 		}
-		
+
 		jms.convertAndSend("COLA_PEDIDOS", pedidoMap);
 
 	}

@@ -28,6 +28,7 @@ import dan.ms.pedidos.domain.Producto;
 import dan.ms.pedidos.services.dao.DetallePedidoRepository;
 import dan.ms.pedidos.services.dao.EstadoPedidoRepository;
 import dan.ms.pedidos.services.dao.PedidoRepository;
+import dan.ms.pedidos.services.dao.ProductoRepository;
 import dan.ms.pedidos.services.interfaces.PedidoService;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
@@ -42,7 +43,7 @@ public class DetallePedidoRestTest {
 
 	@Autowired
 	DetallePedidoRepository detalleRepo;
-	
+
 	@Autowired
 	EstadoPedidoRepository estadoRepo;
 
@@ -52,13 +53,15 @@ public class DetallePedidoRestTest {
 	@Autowired
 	private PedidoService pedidoService;
 
+	@Autowired
+	ProductoRepository productoRepo;
+
 	@LocalServerPort
 	String puerto;
 
 	@BeforeEach
 	void borrar_repositorio() {
 		pedidoRepo.deleteAll();
-		detalleRepo.deleteAll();
 	}
 
 	@Test
@@ -117,16 +120,13 @@ public class DetallePedidoRestTest {
 	@Test
 	void actualizarDetallePedido() {
 
-
+		System.out.println();
 		Pedido ped = crearPedido();
-		
-		String server = "http://localhost:" + puerto + ENDPOINT_DETALLE_PEDIDO + "/pedido/" + ped.getId()
-				+ "/detalle/"+ped.getDetalle().get(1).getId();
 
-		Producto p4 = new Producto();
-		p4.setId(4);
-		p4.setPrecio(4.5);
-		p4.setDescripcion("El cuarto producto que creo");
+		String server = "http://localhost:" + puerto + ENDPOINT_DETALLE_PEDIDO + "/pedido/" + ped.getId() + "/detalle/"
+				+ ped.getDetalle().get(1).getId();
+
+		Producto p4 = productoRepo.findById(4).get();
 
 		DetallePedido dp2 = new DetallePedido();
 		dp2.setCantidad(3);
@@ -167,15 +167,14 @@ public class DetallePedidoRestTest {
 	@Test
 	void borrarDetallePedido() {
 
-
 		Pedido ped = crearPedido();
-		
-		String server = "http://localhost:" + puerto + ENDPOINT_DETALLE_PEDIDO + "/pedido/" + ped.getId()
-				+ "/detalle/"+ped.getDetalle().get(1).getId();
 
-		
-		ResponseEntity <List<DetallePedido>> respuesta = testRestTemplate.exchange(server, HttpMethod.DELETE, null,
-				new ParameterizedTypeReference<List<DetallePedido>>() {});
+		String server = "http://localhost:" + puerto + ENDPOINT_DETALLE_PEDIDO + "/pedido/" + ped.getId() + "/detalle/"
+				+ ped.getDetalle().get(1).getId();
+
+		ResponseEntity<List<DetallePedido>> respuesta = testRestTemplate.exchange(server, HttpMethod.DELETE, null,
+				new ParameterizedTypeReference<List<DetallePedido>>() {
+				});
 
 		assertTrue(respuesta.getStatusCode().equals(HttpStatus.OK));
 
@@ -183,11 +182,10 @@ public class DetallePedidoRestTest {
 
 		List<DetallePedido> dp = ped.getDetalle();
 
-		
 		assertNotEquals(dp, dpDB);
-		
+
 		dp.remove(1);
-		
+
 		assertEquals(dp.size(), dpDB.size());
 		for (int i = 0; i < dp.size(); i++) {
 			assertEquals(dp.get(i).getProducto().getDescripcion(), dpDB.get(i).getProducto().getDescripcion());
@@ -198,7 +196,7 @@ public class DetallePedidoRestTest {
 			assertEquals(dp.get(i).getId(), dpDB.get(i).getId());
 		}
 	}
-	
+
 	private Pedido crearPedido() {
 		String server = "http://localhost:" + puerto + ENDPOINT_PEDIDO;
 		/*
@@ -217,16 +215,10 @@ public class DetallePedidoRestTest {
 		// Creo un producto por cada detalle
 
 		Producto pd1 = new Producto();
-		pd1.setDescripcion("El primer producto que creo");
-		pd1.setPrecio(1.5);
 		pd1.setId(1);
 		Producto pd2 = new Producto();
-		pd2.setDescripcion("El segundo producto que creo");
-		pd2.setPrecio(2.5);
 		pd2.setId(2);
 		Producto pd3 = new Producto();
-		pd3.setDescripcion("El tercer producto que creo");
-		pd3.setPrecio(3.5);
 		pd3.setId(3);
 
 		// seteo cada producto a un detalle
@@ -249,14 +241,13 @@ public class DetallePedidoRestTest {
 
 		Obra ob = new Obra();
 		ob.setId(1);
-		ob.setDescripcion("La famosa obra chiquitita");
 
 		p1.addDetalle(dp1);
 		p1.addDetalle(dp2);
 		p1.addDetalle(dp3);
 		p1.setObra(ob);
 		p1.setFechaPedido(Date.from(Instant.now()));
-		p1.setId(1);
+
 		HttpEntity<Pedido> requestPedido = new HttpEntity<>(p1);
 		ResponseEntity<Pedido> respuesta = testRestTemplate.exchange(server, HttpMethod.POST, requestPedido,
 				Pedido.class);

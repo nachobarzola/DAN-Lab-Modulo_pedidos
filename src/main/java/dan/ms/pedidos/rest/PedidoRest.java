@@ -149,7 +149,10 @@ public class PedidoRest {
 		Optional<Pedido> pe = pedidoService.buscarPorId(idPedido);
 
 		if (pe.isPresent()) {
-			pedidoService.borrarPedido(pe.get());
+			
+			if(pedidoService.borrarPedido(pe.get()).isEmpty()) {
+				return ResponseEntity.notFound().build();
+			}
 			return ResponseEntity.ok().build();
 		}
 		return ResponseEntity.notFound().build();

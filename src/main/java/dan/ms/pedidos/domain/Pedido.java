@@ -29,15 +29,16 @@ public class Pedido {
 	private Date fechaPedido;
 
 
-	@OneToMany(cascade = CascadeType.ALL,fetch = FetchType.EAGER)
+	@OneToMany(fetch = FetchType.EAGER)
+	//(cascade = CascadeType.ALL,fetch = FetchType.EAGER)
 	@JoinColumn(name = "ID_PEDIDO")
 	private List<DetallePedido> detalle = new ArrayList<>();
 
-	@OneToOne
+	@OneToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "ID_ESTADO_PEDIDO")
 	private EstadoPedido estado;
 
-	@OneToOne
+	@OneToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "ID_OBRA")
 	private Obra obra;
 
