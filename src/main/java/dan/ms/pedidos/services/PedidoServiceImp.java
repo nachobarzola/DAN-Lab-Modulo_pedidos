@@ -1,26 +1,34 @@
 package dan.ms.pedidos.services;
 
-import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import dan.ms.pedidos.domain.DetallePedido;
 import dan.ms.pedidos.domain.EstadoPedido;
+import dan.ms.pedidos.domain.Obra;
 import dan.ms.pedidos.domain.Pedido;
+import dan.ms.pedidos.domain.Producto;
 import dan.ms.pedidos.excepciones.ExceptionRechazoPedido;
+import dan.ms.pedidos.services.dao.DetallePedidoRepository;
 import dan.ms.pedidos.services.dao.EstadoPedidoRepository;
+import dan.ms.pedidos.services.dao.ObraRepository;
 import dan.ms.pedidos.services.dao.PedidoRepository;
+import dan.ms.pedidos.services.dao.ProductoRepository;
+import dan.ms.pedidos.services.interfaces.DetallePedidoService;
 import dan.ms.pedidos.services.interfaces.PedidoService;
+import dan.ms.pedidos.services.interfaces.ProductoRestExternoService;
 import dan.ms.pedidos.services.interfaces.RiesgoBCRAService;
-import dan.ms.persistence.repositories.PedidoRepositoryInMemory;
 
 @Service
 public class PedidoServiceImp implements PedidoService {
-
-	private Integer ID_ESTADOPEDIDO_GEN = 1;
 
 	/*
 	 * @Autowired PedidoRepositoryInMemory pedidoRepo;
@@ -28,84 +36,121 @@ public class PedidoServiceImp implements PedidoService {
 	@Autowired
 	PedidoRepository pedidoRepo;
 
+	/*
+	 * @Autowired DetallePedidoRepository detalleRepo;
+	 */
+
+	@Autowired
+	EstadoPedidoRepository estadoRepo;
+
 	@Autowired
 	RiesgoBCRAService riesgoBCRA;
 
+	@Autowired
+	DetallePedidoService detallePedidoService;
+
+	@Autowired
+	DetallePedidoRepository detalleRepo;
+
+	@Autowired
+	ObraRepository obraRepo;
+
+	@Autowired
+	ProductoRepository productoRepo;
+
+	@Autowired
+	ProductoRestExternoService productoExtService;
+
+	@Autowired
+	JmsTemplate jms; // jms: java message service
+
+	@Transactional
 	@Override
-	public Pedido guardarPedido(Pedido ped) throws ExceptionRechazoPedido {
+	public Optional<Pedido> guardarPedido(Pedido ped) {
+		Pedido pedidoAGuardar = new Pedido();
+		if (ped.getId() != null) {
+			pedidoAGuardar.setId(ped.getId());
+		}
+		pedidoAGuardar.setEstado(ped.getEstado());
+		pedidoAGuardar.setFechaPedido(ped.getFechaPedido());
 
-		Boolean stockDisponible = stockDisponiblePedido(ped);
+		// Primero Guardo detalle pedido
 
-		double saldoDeudor = saldoDeudor(ped.getDetalle());
-		Boolean generaSaldoDeudor = saldoDeudor > 0;
+		Optional<List<DetallePedido>> optionalDetalle = detallePedidoService.guardarDetallePedido(ped.getDetalle());
+		Optional<Obra> ob = obraRepo.findById(ped.getObra().getId());
 
-		EstadoPedido esp = new EstadoPedido();
+		if (ob.isEmpty() || optionalDetalle.isEmpty()) {
+			return Optional.empty();
+		}
+		pedidoAGuardar.setObra(ob.get());
 
-		if (stockDisponible) {
-			// Se cumple que hay stock - a
-			if (!generaSaldoDeudor) {
-				// Se cumple que hay stock y se cumple condicion b
-				esp.setEstado("ACEPTADO");
-				esp.setId(1);
-				ped.setEstado(esp);
-				ped.setFechaPedido(Instant.now());
+		// Seteo la lista de detalles al pedido a guardar
 
-				return this.pedidoRepo.save(ped);
+		for (DetallePedido deta : optionalDetalle.get()) {
+
+			Optional<Producto> p = productoRepo.findById(deta.getProducto().getId());
+			if (p.isEmpty()) {
+				return Optional.empty();
 			}
-			double saldoDescubierto = saldoDescubierto();
-			Boolean SaldoDeudorMenorQueDescubierto = saldoDeudor < saldoDescubierto;
-			// TODO: Como hacer el chequeo de riesgo BCRA
-			Boolean situacionCrediticiaBajoRiesgo = situacionCrediticiaBajoRiesgoBCRA();
-			if (generaSaldoDeudor && SaldoDeudorMenorQueDescubierto && situacionCrediticiaBajoRiesgo) {
-				// Se cumple que hay stock y se cumple condicion c
-				esp.setEstado("ACEPTADO");
-				esp.setId(1);
-				ped.setEstado(esp);
-				ped.setFechaPedido(Instant.now());
-				return this.pedidoRepo.save(ped);
-
-			}
-
-			esp.setEstado("RECHAZADO");
-			esp.setId(2);
-			ped.setEstado(esp);
-			ped.setFechaPedido(Instant.now());
-			this.pedidoRepo.save(ped);
-
-			throw new ExceptionRechazoPedido(ped);
+			deta.setProducto(p.get());
 
 		}
-		// Si no hay stock, el pedido se carga como pendiente
-		esp.setEstado("PENDIENTE");
-		esp.setId(3);
-		ped.setEstado(esp);
-		ped.setFechaPedido(Instant.now());
-		return this.pedidoRepo.save(ped);
 
+		pedidoAGuardar.setDetalle(optionalDetalle.get());
+
+		try {
+			// Guardamos el pedido
+			pedidoAGuardar = pedidoRepo.saveAndFlush(pedidoAGuardar);
+
+			return Optional.of(pedidoAGuardar);
+		} catch (Exception e) {
+			// e.printStackTrace();
+			TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+			return Optional.empty();
+		}
 	}
 
 	@Override
 	public Optional<Pedido> buscarPorId(Integer id) {
+		Optional<Pedido> pedido = this.pedidoRepo.findById(id);
+		if (pedido.isPresent()) {
+			List<DetallePedido> detp = detalleRepo.findByIdPedido(id);
+			if (!detp.isEmpty()) {
+				pedido.get().setDetalle(detp);
+			}
+		}
+		return pedido;
+	}
 
-		return this.pedidoRepo.findById(id);
+	@Transactional
+	@Override
+	public Optional<Pedido> borrarPedido(Pedido ped) {
+		try {
+			// Borramos el pedido
+			this.pedidoRepo.delete(ped);
+
+			if (this.detallePedidoService.BorrarDetallePedido(ped.getDetalle()).isEmpty()) {
+				TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+				return Optional.empty();
+			}
+			return Optional.of(ped);
+		} catch (Exception e) {
+			return Optional.empty();
+		}
+
 	}
 
 	@Override
-	public void borrarPedido(Pedido ped) {
-		this.pedidoRepo.delete(ped);
+	public Optional<Pedido> actualizarPedido(Pedido ped) {
+		Optional<Pedido> pedido = guardarPedido(ped);
 
-	}
-
-	@Override
-	public Pedido actualizarPedido(Pedido ped) {
-		// TODO Falta implementar actualizarPedido
-		return null;
+		return pedido;
 	}
 
 	@Override
 	public Boolean stockDisponiblePedido(Pedido ped) {
-		// TODO Auto-generated method StockDisponiblePedido
-		return true;
+
+		return productoExtService.hayStockDisponible(ped.getDetalle());
 	}
 
 	@Override
@@ -127,6 +172,106 @@ public class PedidoServiceImp implements PedidoService {
 		}
 
 		return true;
+	}
+
+	@Override
+	public Optional<Pedido> agregarDetallePedido(Pedido ped) {
+		return guardarPedido(ped);
+	}
+
+	@Override
+	public List<Pedido> buscarPorIdObra(Integer idObra) {
+		Obra ob = new Obra();
+		Optional<Obra> obra = obraRepo.findById(idObra);
+		if (obra.isPresent()) {
+			ob = obra.get();
+			return pedidoRepo.findByObra(ob).get();
+		}
+		return null;
+	}
+
+	@Override
+	public Optional<DetallePedido> borrarDetallePedido(DetallePedido det) {
+
+		return detallePedidoService.BorrarDetallePedido(det);
+
+	}
+
+	@Override
+	public Optional<List<Pedido>> buscarPorEstado(EstadoPedido estado) {
+
+		return pedidoRepo.findByEstado(estado);
+	}
+
+	public EstadoPedido obtenerEstadoPedido(String estado) {
+
+		return estadoRepo.findByEstado(estado);
+
+	}
+
+	@Override
+	public Optional<Pedido> evaluarEstadoPedido(Pedido ped) throws ExceptionRechazoPedido {
+
+		Boolean stockDisponible = stockDisponiblePedido(ped);
+
+		double saldoDeudor = saldoDeudor(ped.getDetalle());
+		Boolean generaSaldoDeudor = saldoDeudor > 0;
+
+		EstadoPedido esp = new EstadoPedido();
+
+		if (stockDisponible) {
+			// Se cumple que hay stock - a
+			if (!generaSaldoDeudor) {
+				// Se cumple que hay stock y se cumple condicion b
+				esp.setEstado("ACEPTADO");
+				ped.setEstado(esp);
+				// Enviar pedido a cola
+				enviarPedidoACola(ped);
+
+			} else {
+				double saldoDescubierto = saldoDescubierto();
+				Boolean SaldoDeudorMenorQueDescubierto = saldoDeudor < saldoDescubierto;
+
+				Boolean situacionCrediticiaBajoRiesgo = situacionCrediticiaBajoRiesgoBCRA();
+				if (generaSaldoDeudor && SaldoDeudorMenorQueDescubierto && situacionCrediticiaBajoRiesgo) {
+					// Se cumple que hay stock y se cumple condicion c
+					esp.setEstado("ACEPTADO");
+					ped.setEstado(esp);
+					// Enviar pedido a cola
+					enviarPedidoACola(ped);
+
+				} else {
+
+					esp.setEstado("RECHAZADO");
+					ped.setEstado(esp);
+					esp.setId(obtenerEstadoPedido(ped.getEstado().getEstado()).getId());
+					ped.setEstado(esp);
+					throw new ExceptionRechazoPedido(ped);
+				}
+			}
+
+		} else {
+			// Si no hay stock, el pedido se carga como pendiente
+			esp.setEstado("PENDIENTE");
+			ped.setEstado(esp);
+		}
+		esp.setId(obtenerEstadoPedido(ped.getEstado().getEstado()).getId());
+		ped.setEstado(esp);
+		return Optional.of(ped);
+	}
+
+	private void enviarPedidoACola(Pedido p) {
+		Map<String, Integer> pedidoMap = new HashMap<>();
+
+		pedidoMap.put("cantidadDetalle", p.getDetalle().size());
+		int i = 1;
+		for (DetallePedido det : p.getDetalle()) {
+			pedidoMap.put("idDetallePedido" + i, det.getId());
+			i++;
+		}
+
+		jms.convertAndSend("COLA_PEDIDOS", pedidoMap);
+
 	}
 
 }

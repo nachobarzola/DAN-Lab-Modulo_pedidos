@@ -18,6 +18,7 @@ public class RiesgoBCRAServiceImp implements RiesgoBCRAService {
 
 	}
 
+	@SuppressWarnings("unused")
 	private Integer estadoRechazado() {
 
 		return MEDIO;

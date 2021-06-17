@@ -8,4 +8,5 @@ import dan.ms.pedidos.domain.EstadoPedido;
 @Repository
 public interface EstadoPedidoRepository extends JpaRepository<EstadoPedido,Integer> {
 
+	public EstadoPedido findByEstado(String estado);
 }

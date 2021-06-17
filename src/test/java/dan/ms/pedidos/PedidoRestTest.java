@@ -1,8 +1,7 @@
 package dan.ms.pedidos;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Date;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -21,23 +20,19 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
 
 import dan.ms.pedidos.domain.DetallePedido;
-import dan.ms.pedidos.domain.EstadoPedido;
 import dan.ms.pedidos.domain.Obra;
 import dan.ms.pedidos.domain.Pedido;
 import dan.ms.pedidos.domain.Producto;
 import dan.ms.pedidos.services.dao.EstadoPedidoRepository;
 import dan.ms.pedidos.services.dao.PedidoRepository;
 import dan.ms.pedidos.services.interfaces.PedidoService;
-import dan.ms.persistence.repositories.PedidoRepositoryInMemory;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 public class PedidoRestTest {
 
 	private String ENDPOINT_PEDIDO = "/api/pedido";
-	private RestTemplate restTemplate = new RestTemplate();
 
 	/*
 	 * @Autowired PedidoRepositoryInMemory pedidoRepo;
@@ -82,16 +77,10 @@ public class PedidoRestTest {
 		// Creo un producto por cada detalle
 
 		Producto pd1 = new Producto();
-		pd1.setDescripcion("Un productito bien falso");
-		pd1.setPrecio(150.5);
 		pd1.setId(1);
 		Producto pd2 = new Producto();
-		pd2.setDescripcion("Un producto bien mentiroso");
-		pd2.setPrecio(108.5);
 		pd2.setId(2);
 		Producto pd3 = new Producto();
-		pd3.setDescripcion("Falsolin");
-		pd3.setPrecio(60.5);
 		pd3.setId(3);
 
 		// seteo cada producto a un detalle
@@ -100,17 +89,14 @@ public class PedidoRestTest {
 		dp3.setProducto(pd3);
 
 		// seteo cantidades y precios totales de producto
-		dp1.setId(1);
 		dp1.setCantidad(2);
 		dp1.setPrecio(301.0);
-		dp2.setId(2);
 		dp2.setCantidad(1);
 		dp2.setPrecio(108.5);
-		dp3.setId(3);
 		dp3.setCantidad(3);
 		dp3.setPrecio(181.5);
 
-		// Creo una obra
+		// Le asigno una obra
 
 		Obra ob = new Obra();
 		ob.setId(1);
@@ -120,7 +106,7 @@ public class PedidoRestTest {
 		p1.addDetalle(dp2);
 		p1.addDetalle(dp3);
 		p1.setObra(ob);
-		p1.setFechaPedido(Instant.now());
+		p1.setFechaPedido(Date.from(Instant.now()));
 		p1.setId(1);
 
 		HttpEntity<Pedido> requestPedido = new HttpEntity<>(p1);
@@ -129,13 +115,13 @@ public class PedidoRestTest {
 
 		assertTrue(respuesta.getStatusCode().equals(HttpStatus.OK));
 
-		// Chequeo que no este persistido
-		Optional<Pedido> cli = pedidoService.buscarPorId(p1.getId());
+		// Chequeo que este persistido
+		Optional<Pedido> cli = pedidoService.buscarPorId(respuesta.getBody().getId());
 		// assertEquals(p1, cli.get()); Nunca van a ser iguales porque se agrega un
 		// estado
 		assertNotEquals(Optional.empty(), cli);
 
-		pedidoService.borrarPedido(p1);
+		pedidoService.borrarPedido(respuesta.getBody());
 
 	}
 
@@ -188,18 +174,13 @@ public class PedidoRestTest {
 		p1.addDetalle(dp1);
 		p1.addDetalle(dp2);
 		p1.addDetalle(dp3);
-		p1.setFechaPedido(Instant.now());
-		p1.setId(1);
+		p1.setFechaPedido(Date.from(Instant.now()));
 
 		HttpEntity<Pedido> requestPedido = new HttpEntity<>(p1);
 		ResponseEntity<Pedido> respuesta = testRestTemplate.exchange(server, HttpMethod.POST, requestPedido,
 				Pedido.class);
 
 		assertTrue(respuesta.getStatusCode().equals(HttpStatus.BAD_REQUEST));
-
-		// Chequeo que no este persistido
-		Optional<Pedido> cli = pedidoService.buscarPorId(p1.getId());
-		assertEquals(Optional.empty(), cli);
 
 	}
 
@@ -218,7 +199,7 @@ public class PedidoRestTest {
 		ob.setId(1);
 		ob.setDescripcion("La famosa obra chiquitita");
 
-		p1.setFechaPedido(Instant.now());
+		p1.setFechaPedido(Date.from(Instant.now()));
 		p1.setObra(ob);
 		p1.setId(1);
 
@@ -228,9 +209,6 @@ public class PedidoRestTest {
 
 		assertTrue(respuesta.getStatusCode().equals(HttpStatus.BAD_REQUEST));
 
-		// Chequeo que no este persistido
-		Optional<Pedido> cli = pedidoService.buscarPorId(p1.getId());
-		assertTrue(cli.isEmpty());
 	}
 
 	@Test
@@ -285,7 +263,7 @@ public class PedidoRestTest {
 		p1.addDetalle(dp2);
 		p1.addDetalle(dp3);
 		p1.setObra(ob);
-		p1.setFechaPedido(Instant.now());
+		p1.setFechaPedido(Date.from(Instant.now()));
 		p1.setId(1);
 
 		HttpEntity<Pedido> requestPedido = new HttpEntity<>(p1);
@@ -294,8 +272,5 @@ public class PedidoRestTest {
 
 		assertTrue(respuesta.getStatusCode().equals(HttpStatus.BAD_REQUEST));
 
-		// Chequeo que no este persistido
-		Optional<Pedido> cli = pedidoService.buscarPorId(p1.getId());
-		assertTrue(cli.isEmpty());
 	}
 }
