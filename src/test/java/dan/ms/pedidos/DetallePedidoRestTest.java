@@ -20,6 +20,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 
 import dan.ms.pedidos.domain.DetallePedido;
 import dan.ms.pedidos.domain.Obra;
@@ -32,6 +33,7 @@ import dan.ms.pedidos.services.dao.ProductoRepository;
 import dan.ms.pedidos.services.interfaces.PedidoService;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("testing")
 public class DetallePedidoRestTest {
 
 	private String ENDPOINT_DETALLE_PEDIDO = "/api/detallePedido";

@@ -2,10 +2,8 @@ package dan.ms.pedidos;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.FileNotFoundException;
 import java.time.Instant;
 import java.util.Date;
-import java.util.Formatter;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -14,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.test.context.ActiveProfiles;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,13 +24,13 @@ import dan.ms.pedidos.domain.Obra;
 import dan.ms.pedidos.domain.Pedido;
 import dan.ms.pedidos.domain.Producto;
 import dan.ms.pedidos.excepciones.ExceptionRechazoPedido;
-import dan.ms.pedidos.services.dao.DetallePedidoRepository;
 import dan.ms.pedidos.services.dao.ObraRepository;
 import dan.ms.pedidos.services.interfaces.EstadoPedidoService;
 import dan.ms.pedidos.services.interfaces.PedidoService;
 import dan.ms.persistence.repositories.PedidoRepositoryInMemory;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("testing")
 public class PedidoServiceImpTest {
 
 	@Autowired
@@ -44,6 +44,9 @@ public class PedidoServiceImpTest {
 
 	@Autowired
 	ObraRepository obraRepo;
+	
+	@LocalServerPort
+	String puerto;
 
 	@BeforeEach
 	void borrar_repositorio() {
