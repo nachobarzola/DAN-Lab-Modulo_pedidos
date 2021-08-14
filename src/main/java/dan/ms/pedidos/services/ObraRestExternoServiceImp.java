@@ -17,22 +17,25 @@ public class ObraRestExternoServiceImp implements ObraRestExternoService {
 	@SuppressWarnings("rawtypes")
 	@Autowired
     CircuitBreakerFactory circuitBreakerFactory;
-	private static String API_REST_USUARIO = "http://localhost:9000/api";
-	private static String ENDPOINT_OBRA = "/obra";
 	
-	String uri = API_REST_USUARIO + ENDPOINT_OBRA;
+	@Autowired
+	RestTemplate restUsuario;
+	
+	private static String API_REST_USUARIO = "http://modulo-usuarios/api";
+	private static String ENDPOINT_OBRA = "/obra";
+	String uri = null;
+	
 	
 	
 	@Override
 	public List<Obra> obtenerObrasDeUnCliente(String clientParams) {
+		uri = API_REST_USUARIO + ENDPOINT_OBRA;
 		CircuitBreaker circuitBreaker = circuitBreakerFactory.create("circuitbreaker");
-		RestTemplate restUsuario = new RestTemplate();
 		uri = uri + clientParams;
 		Obra[] respuesta = circuitBreaker.run(() -> 
 		restUsuario.getForObject(uri,Obra[].class),
 		throwable -> defaultResponse());
 
-		//ResponseEntity<Obra[]> respuesta = restUsuario.exchange(clientParam, HttpMethod.GET, null, Obra[].class);
 		if(respuesta == null) {
 			return null;
 		}

@@ -6,9 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.circuitbreaker.CircuitBreaker;
 import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -19,20 +16,20 @@ import dan.ms.pedidos.services.interfaces.ProductoRestExternoService;
 
 @Service
 public class ProductoRestExternoServiceImp implements ProductoRestExternoService {
+	@SuppressWarnings("rawtypes")
 	@Autowired
     CircuitBreakerFactory circuitBreakerFactory;
 	
+	@Autowired
+	RestTemplate restProducto;
 	
-	private static String API_REST_PRODUCTO = "http://localhost:9001/";
+	private static String API_REST_PRODUCTO = "http://modulo-productos/";
 	private static String ENDPOINT_PRODUCTO = "api/producto";
 
-    //TODO: hay que testear este metodo
 	@Override
 	public Boolean hayStockDisponible(List<DetallePedido> detP) {
 		CircuitBreaker circuitBreaker = circuitBreakerFactory.create("circuitbreaker");
 
-
-		RestTemplate restProducto = new RestTemplate();
 		String uri = API_REST_PRODUCTO + ENDPOINT_PRODUCTO +"/detallePedido";
 		//
 		Boolean respuesta;
@@ -41,14 +38,6 @@ public class ProductoRestExternoServiceImp implements ProductoRestExternoService
 
 
 		HttpEntity<List<DetallePedido>> requestDetallePedido = new HttpEntity<>(detP);
-		//respuesta = restProducto.exchange(uri, HttpMethod.POST, requestDetallePedido, Boolean.class);
-
-		/*if (respuesta.getStatusCode().equals(HttpStatus.OK)) {
-			return respuesta.getBody();
-		} else {
-			return false;
-		}
-		*/
 		respuesta = circuitBreaker.run(
 				() -> restProducto.postForObject(uri,requestDetallePedido, Boolean.class) ,
 				throwable -> defaultResponse()
@@ -58,6 +47,7 @@ public class ProductoRestExternoServiceImp implements ProductoRestExternoService
 	}
 	
 	public Boolean defaultResponse() {
+		System.out.println("Se activo el cricuit breaker");
 		return false;
 		}
 
