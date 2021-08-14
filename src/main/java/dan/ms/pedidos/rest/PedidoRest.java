@@ -1,13 +1,11 @@
 package dan.ms.pedidos.rest;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestTemplate;
 
 import dan.ms.pedidos.domain.DetallePedido;
 import dan.ms.pedidos.domain.EstadoPedido;
@@ -26,20 +23,23 @@ import dan.ms.pedidos.domain.Obra;
 import dan.ms.pedidos.domain.Pedido;
 import dan.ms.pedidos.excepciones.ExceptionRechazoPedido;
 import dan.ms.pedidos.services.interfaces.EstadoPedidoService;
+import dan.ms.pedidos.services.interfaces.ObraRestExternoService;
 import dan.ms.pedidos.services.interfaces.PedidoService;
 import io.swagger.annotations.ApiOperation;
 
 @RestController
 @RequestMapping("/api/pedido")
 public class PedidoRest {
-	private static String API_REST_USUARIO = "http://localhost:9000/api";
-	private static String ENDPOINT_OBRA = "/obra";
+	
 
 	@Autowired
 	EstadoPedidoService estadoPedidoService;
 
 	@Autowired
 	PedidoService pedidoService;
+	
+	@Autowired
+	ObraRestExternoService obraExternalRestService;
 
 	@PostMapping
 	@ApiOperation(value = "Crea un pedido")
@@ -194,26 +194,32 @@ public class PedidoRest {
 	@ApiOperation(value = "Obtiene los pedidos asociados al id y/o cuit de un cliente")
 	public ResponseEntity<List<Pedido>> getPor_Cuit_o_Id(@RequestParam(required = false) String cuitCliente,
 			@RequestParam(required = false) Integer idCliente) {
-		RestTemplate restUsuario = new RestTemplate();
-		String uri = API_REST_USUARIO + ENDPOINT_OBRA;
+		
+		String clientParam="";
 
 		if (cuitCliente == null && idCliente == null) {
 			return ResponseEntity.badRequest().build();
 		} else {
 			if (cuitCliente != null && idCliente == null) {
-				uri = uri + "?cuitCliente=" + cuitCliente;
+				clientParam = clientParam + "?cuitCliente=" + cuitCliente;
 			}
 			if (idCliente != null && cuitCliente == null) {
-				uri = uri + "?idCliente=" + idCliente;
+				clientParam = clientParam + "?idCliente=" + idCliente;
 			}
 			if (idCliente != null && cuitCliente != null) {
-				uri = uri + "?idCliente=" + idCliente + "&cuitCliente=" + cuitCliente;
+				clientParam = clientParam + "?idCliente=" + idCliente + "&cuitCliente=" + cuitCliente;
 			}
-			ResponseEntity<Obra[]> respuesta = restUsuario.exchange(uri, HttpMethod.GET, null, Obra[].class);
-			Obra[] obrasRespuesta = respuesta.getBody();
+			
+			//Todo implementar un micro que se haga con circuit breaker
+			
+			List<Obra> obrasRespuestaLista = obraExternalRestService.obtenerObrasDeUnCliente(clientParam);
+			
+			if(obrasRespuestaLista==null) {
+				return ResponseEntity.notFound().build();
+			}
 
 			// Una vez que obtengo las obras, debo buscar los pedidos asosiados a las obras
-			List<Obra> obrasRespuestaLista = Arrays.asList(obrasRespuesta);
+			
 			System.out.print("obrasRespuestaLista:(" + obrasRespuestaLista.size() + ") \n");
 
 			// Buscamos los pedidos asoaciados a las obras recibidas del API usuario
